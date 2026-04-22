@@ -395,20 +395,17 @@ export class ModerationService {
         );
       }
 
-      
-      const bans = await guild.bans.fetch();
-      const banInfo = bans.get(user.id);
+      const banInfo = await guild.bans.fetch(user.id).catch(() => null);
 
       if (!banInfo) {
         throw new TitanBotError(
           'User not banned',
           ErrorTypes.VALIDATION,
-          `${user.tag} is not currently banned from this server`
+          `❌ **${user.tag}** is not currently banned from this server.`
         );
       }
 
-      
-      await guild.members.unban(user.id, reason);
+      await guild.bans.remove(user.id, reason);
 
       
       const caseId = await logModerationAction({
