@@ -29,13 +29,9 @@ export default {
             }
 
             const targetOption = interaction.options.get("target");
+            const rawData = interaction.options.data;
             const targetId = targetOption?.value || interaction.options.getUser("target")?.id;
-            logger.debug('Ban target option', {
-                hasOption: !!targetOption,
-                value: targetOption?.value,
-                hasUser: !!targetOption?.user,
-                resolvedId: targetId
-            });
+            logger.info(`Ban debug — targetOption=${JSON.stringify(targetOption)} rawData=${JSON.stringify(rawData)} resolvedId=${targetId}`);
 
             let user = interaction.options.getUser("target") || targetOption?.user || null;
             if (!user && targetId) {
