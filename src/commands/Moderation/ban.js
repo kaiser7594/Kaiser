@@ -28,25 +28,23 @@ export default {
                 await interaction.deferReply().catch(() => {});
             }
 
-            const targetOption = interaction.options.get("target");
-            const rawData = interaction.options.data;
-            const targetId = targetOption?.value || interaction.options.getUser("target")?.id;
-            logger.info(`Ban debug — targetOption=${JSON.stringify(targetOption)} rawData=${JSON.stringify(rawData)} resolvedId=${targetId}`);
+            // Find the user option regardless of its registered name (target / user / etc.)
+            const userOpt =
+                interaction.options.data.find((o) => o.type === 6) ||
+                interaction.options.get("target") ||
+                interaction.options.get("user");
+            const targetId = userOpt?.value ? String(userOpt.value) : null;
 
-            let user = interaction.options.getUser("target") || targetOption?.user || null;
+            let user = userOpt?.user || null;
             if (!user && targetId) {
-                user = await client.users.fetch(String(targetId)).catch((e) => {
+                user = await client.users.fetch(targetId).catch((e) => {
                     logger.warn(`Ban: failed to fetch user ${targetId}: ${e.message}`);
                     return null;
                 });
             }
-
             if (!user && targetId) {
-                // Fall back to a stub from the existing ban record
-                const existingBan = await interaction.guild.bans.fetch(String(targetId)).catch(() => null);
-                if (existingBan) {
-                    user = existingBan.user;
-                }
+                const existingBan = await interaction.guild.bans.fetch(targetId).catch(() => null);
+                if (existingBan) user = existingBan.user;
             }
 
             if (!user) {
