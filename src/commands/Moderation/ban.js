@@ -23,15 +23,38 @@ export default {
 
     async execute(interaction, config, client) {
         try {
+            // Reply publicly so everyone in the channel can see the ban result
+            if (!interaction.deferred && !interaction.replied) {
+                await interaction.deferReply().catch(() => {});
+            }
+
             const targetOption = interaction.options.get("target");
-            let user = interaction.options.getUser("target")
-                || targetOption?.user
-                || (targetOption?.value
-                    ? await client.users.fetch(targetOption.value).catch(() => null)
-                    : null);
+            const targetId = targetOption?.value || interaction.options.getUser("target")?.id;
+            logger.debug('Ban target option', {
+                hasOption: !!targetOption,
+                value: targetOption?.value,
+                hasUser: !!targetOption?.user,
+                resolvedId: targetId
+            });
+
+            let user = interaction.options.getUser("target") || targetOption?.user || null;
+            if (!user && targetId) {
+                user = await client.users.fetch(String(targetId)).catch((e) => {
+                    logger.warn(`Ban: failed to fetch user ${targetId}: ${e.message}`);
+                    return null;
+                });
+            }
+
+            if (!user && targetId) {
+                // Fall back to a stub from the existing ban record
+                const existingBan = await interaction.guild.bans.fetch(String(targetId)).catch(() => null);
+                if (existingBan) {
+                    user = existingBan.user;
+                }
+            }
 
             if (!user) {
-                throw new Error("Could not resolve that user. They may no longer exist.");
+                throw new Error("Could not resolve that user. Try passing their user ID directly.");
             }
 
             const reason = interaction.options.getString("reason") || "No reason provided";
