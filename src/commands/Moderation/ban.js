@@ -23,7 +23,17 @@ export default {
 
     async execute(interaction, config, client) {
         try {
-            const user = interaction.options.getUser("target");
+            const targetOption = interaction.options.get("target");
+            let user = interaction.options.getUser("target")
+                || targetOption?.user
+                || (targetOption?.value
+                    ? await client.users.fetch(targetOption.value).catch(() => null)
+                    : null);
+
+            if (!user) {
+                throw new Error("Could not resolve that user. They may no longer exist.");
+            }
+
             const reason = interaction.options.getString("reason") || "No reason provided";
 
             if (user.id === interaction.user.id) {
