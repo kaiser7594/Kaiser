@@ -8,12 +8,12 @@ import { InteractionHelper } from '../../utils/interactionHelper.js';
 export default {
     data: new SlashCommandBuilder()
         .setName("warn")
-        .setDescription("Warn a user")
-        .addUserOption((o) =>
+        .setDescription("Warn a user by ID")
+        .addStringOption((o) =>
             o
-                .setName("target")
+                .setName("user_id")
                 .setRequired(true)
-                .setDescription("User to warn"),
+                .setDescription("Raw user ID to warn"),
         )
         .addStringOption((o) =>
             o
@@ -40,15 +40,25 @@ export default {
                     throw new Error("You need the `Moderate Members` permission to issue warnings.");
                 }
 
-                const target = interaction.options.getUser("target");
-                const member = interaction.options.getMember("target");
+                const rawId = (
+                    interaction.options.getString("user_id") ||
+                    interaction.options.getString("target") ||
+                    interaction.options.data.find((o) => o.type === 6 || o.type === 3)?.value ||
+                    ""
+                ).toString().trim().replace(/[<@!>]/g, "");
+
+                if (!/^\d{17,20}$/.test(rawId)) {
+                    throw new Error("Please provide a valid user ID (17-20 digits).");
+                }
+
+                const target = await client.users.fetch(rawId).catch(() => null);
+                if (!target) {
+                    throw new Error("Could not resolve that user ID.");
+                }
+                const member = await interaction.guild.members.fetch(rawId).catch(() => null);
                 const reason = interaction.options.getString("reason");
                 const moderator = interaction.user;
                 const guildId = interaction.guildId;
-
-                if (!member) {
-                    throw new Error("The target user is not currently in this server.");
-                }
 
                 
                 const result = await WarningService.addWarning({
