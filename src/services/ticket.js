@@ -413,7 +413,13 @@ components: []
     );
     
     await channel.send({ embeds: [closeEmbed], components: [controlRow] });
-    
+
+    // Send transcript to configured transcript channel (if any)
+    const transcriptResult = await sendTranscriptToChannel(channel, ticketData, closer, {
+      reason,
+      action: 'closed'
+    });
+
     await logTicketEvent({
       client: channel.client,
       guildId: channel.guild.id,
@@ -427,7 +433,9 @@ components: []
         metadata: {
           dmSent: dmOnClose,
           closedAt: ticketData.closedAt,
-          movedToClosedCategory
+          movedToClosedCategory,
+          transcriptSent: transcriptResult.sent,
+          transcriptSkipReason: transcriptResult.sent ? null : transcriptResult.reason
         }
       }
     });
@@ -820,6 +828,68 @@ ${rows}
       errorStack: error.stack
     });
     return null;
+  }
+}
+
+async function sendTranscriptToChannel(channel, ticketData, executor, { reason = null, action = 'closed' } = {}) {
+  try {
+    const guildConfig = await getGuildConfig(channel.client, channel.guild.id);
+    if (!guildConfig.ticketTranscriptChannelId) {
+      return { sent: false, reason: 'NOT_CONFIGURED' };
+    }
+
+    const transcriptChannel = await channel.client.channels
+      .fetch(guildConfig.ticketTranscriptChannelId)
+      .catch(() => null);
+
+    if (!transcriptChannel || !transcriptChannel.isSendable?.()) {
+      logger.error('Transcript channel missing or not sendable', {
+        channelId: channel.id,
+        transcriptChannelId: guildConfig.ticketTranscriptChannelId
+      });
+      return { sent: false, reason: 'CHANNEL_INVALID' };
+    }
+
+    const attachment = await generateTranscript(channel);
+    if (!attachment) {
+      return { sent: false, reason: 'GENERATION_FAILED' };
+    }
+
+    const transcriptEmbed = new EmbedBuilder()
+      .setTitle('📜 Ticket Transcript')
+      .setDescription(`Transcript for ticket #${ticketData.id} (${action})`)
+      .setColor('#3498db')
+      .addFields(
+        { name: 'Ticket ID', value: `\`${ticketData.id}\``, inline: true },
+        { name: 'Channel', value: `#${channel.name}`, inline: true },
+        { name: 'Opened by', value: `<@${ticketData.userId}>`, inline: true },
+        { name: 'Action', value: action.charAt(0).toUpperCase() + action.slice(1), inline: true },
+        ...(reason ? [{ name: 'Reason', value: String(reason).slice(0, 1024), inline: true }] : []),
+        { name: 'Generated', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false }
+      );
+
+    if (executor?.username) {
+      transcriptEmbed.setFooter({
+        text: `${action.charAt(0).toUpperCase() + action.slice(1)} by: ${executor.username}`,
+        iconURL: executor.displayAvatarURL?.()
+      });
+    }
+
+    await transcriptChannel.send({ embeds: [transcriptEmbed], files: [attachment] });
+    logger.info('✅ Transcript sent', {
+      channelId: channel.id,
+      ticketNumber: ticketData.id,
+      transcriptChannelId: transcriptChannel.id,
+      action
+    });
+    return { sent: true };
+  } catch (error) {
+    logger.error('Failed to send transcript:', {
+      channelId: channel?.id,
+      ticketNumber: ticketData?.id,
+      error: error.message
+    });
+    return { sent: false, reason: 'ERROR', error: error.message };
   }
 }
 
