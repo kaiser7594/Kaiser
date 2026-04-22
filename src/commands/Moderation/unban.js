@@ -8,11 +8,11 @@ import { InteractionHelper } from '../../utils/interactionHelper.js';
 export default {
     data: new SlashCommandBuilder()
         .setName("unban")
-        .setDescription("Unban a user from the server")
-        .addUserOption(option =>
+        .setDescription("Unban a user by ID")
+        .addStringOption(option =>
             option
-                .setName("target")
-                .setDescription("The user to unban (can be ID or mention)")
+                .setName("user_id")
+                .setDescription("Raw user ID to unban")
                 .setRequired(true)
         )
         .addStringOption(option =>
@@ -35,10 +35,28 @@ export default {
         }
 
         try {
-                const targetUser = interaction.options.getUser("target");
+                const rawId = (
+                    interaction.options.getString("user_id") ||
+                    interaction.options.getString("target") ||
+                    interaction.options.data.find((o) => o.type === 6 || o.type === 3)?.value ||
+                    ""
+                ).toString().trim().replace(/[<@!>]/g, "");
+
+                if (!/^\d{17,20}$/.test(rawId)) {
+                    throw new Error("Please provide a valid user ID (17-20 digits).");
+                }
+
+                let targetUser = await client.users.fetch(rawId).catch(() => null);
+                if (!targetUser) {
+                    const existingBan = await interaction.guild.bans.fetch(rawId).catch(() => null);
+                    if (existingBan) targetUser = existingBan.user;
+                }
+                if (!targetUser) {
+                    throw new Error("Could not resolve that user ID.");
+                }
+
                 const reason = interaction.options.getString("reason") || "No reason provided";
 
-                
                 const result = await ModerationService.unbanUser({
                     guild: interaction.guild,
                     user: targetUser,

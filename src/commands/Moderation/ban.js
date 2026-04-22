@@ -8,11 +8,11 @@ import { handleInteractionError } from '../../utils/errorHandler.js';
 export default {
     data: new SlashCommandBuilder()
         .setName("ban")
-        .setDescription("Ban a user from the server")
-        .addUserOption((option) =>
+        .setDescription("Ban a user by ID")
+        .addStringOption((option) =>
             option
-                .setName("target")
-                .setDescription("The user to ban")
+                .setName("user_id")
+                .setDescription("Raw user ID to ban")
                 .setRequired(true),
         )
         .addStringOption((option) =>
@@ -28,27 +28,24 @@ export default {
                 await interaction.deferReply().catch(() => {});
             }
 
-            // Find the user option regardless of its registered name (target / user / etc.)
-            const userOpt =
-                interaction.options.data.find((o) => o.type === 6) ||
-                interaction.options.get("target") ||
-                interaction.options.get("user");
-            const targetId = userOpt?.value ? String(userOpt.value) : null;
+            const rawId = (
+                interaction.options.getString("user_id") ||
+                interaction.options.getString("target") ||
+                interaction.options.data.find((o) => o.type === 6 || o.type === 3)?.value ||
+                ""
+            ).toString().trim().replace(/[<@!>]/g, "");
 
-            let user = userOpt?.user || null;
-            if (!user && targetId) {
-                user = await client.users.fetch(targetId).catch((e) => {
-                    logger.warn(`Ban: failed to fetch user ${targetId}: ${e.message}`);
-                    return null;
-                });
+            if (!/^\d{17,20}$/.test(rawId)) {
+                throw new Error("Please provide a valid user ID (17-20 digits).");
             }
-            if (!user && targetId) {
-                const existingBan = await interaction.guild.bans.fetch(targetId).catch(() => null);
+
+            let user = await client.users.fetch(rawId).catch(() => null);
+            if (!user) {
+                const existingBan = await interaction.guild.bans.fetch(rawId).catch(() => null);
                 if (existingBan) user = existingBan.user;
             }
-
             if (!user) {
-                throw new Error("Could not resolve that user. Try passing their user ID directly.");
+                throw new Error("Could not resolve that user ID.");
             }
 
             const reason = interaction.options.getString("reason") || "No reason provided";
