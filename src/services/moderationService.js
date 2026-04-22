@@ -85,7 +85,21 @@ export class ModerationService {
         );
       }
 
-      
+      // Check if user is already banned before doing anything else
+      try {
+        const existingBan = await guild.bans.fetch(user.id).catch(() => null);
+        if (existingBan) {
+          throw new TitanBotError(
+            'User is already banned',
+            ErrorTypes.VALIDATION,
+            `❌ **${user.tag}** is already banned from this server.`
+          );
+        }
+      } catch (banCheckError) {
+        if (banCheckError instanceof TitanBotError) throw banCheckError;
+        logger.debug('Ban lookup failed, proceeding cautiously:', banCheckError.message);
+      }
+
       let targetMember = null;
       try {
         targetMember = await guild.members.fetch(user.id).catch(() => null);
