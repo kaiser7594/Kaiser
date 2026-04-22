@@ -8,23 +8,62 @@ import { logger } from '../utils/logger.js';
 import { getLevelingConfig, getUserLevelData } from '../services/leveling.js';
 import { addXp } from '../services/xpSystem.js';
 import { checkRateLimit } from '../utils/rateLimiter.js';
+import { createInteractionLike } from '../utils/prefixAdapter.js';
+import { getGuildConfig } from '../utils/database.js';
 
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
+const PREFIX = 'k!';
 
 export default {
   name: Events.MessageCreate,
   async execute(message, client) {
     try {
-      
       if (message.author.bot || !message.guild) return;
 
+      await handlePrefixCommand(message, client);
       await handleLeveling(message, client);
     } catch (error) {
       logger.error('Error in messageCreate event:', error);
     }
   }
 };
+
+async function handlePrefixCommand(message, client) {
+  if (!message.content?.toLowerCase().startsWith(PREFIX)) return;
+
+  const body = message.content.slice(PREFIX.length).trim();
+  if (!body) return;
+
+  const tokens = body.match(/"([^"]*)"|'([^']*)'|(\S+)/g)?.map(t => t.replace(/^["']|["']$/g, '')) || [];
+  const commandName = tokens.shift()?.toLowerCase();
+  if (!commandName) return;
+
+  const command = client.commands?.get(commandName);
+  if (!command) return;
+
+  let guildConfig = null;
+  try {
+    guildConfig = await getGuildConfig(client, message.guild.id);
+    if (guildConfig?.disabledCommands?.[commandName]) {
+      await message.reply(`The \`${commandName}\` command is disabled in this server.`);
+      return;
+    }
+  } catch (e) {
+    logger.warn(`Prefix: failed to load guild config: ${e.message}`);
+  }
+
+  const fakeInteraction = createInteractionLike(command, message, client, tokens);
+  try {
+    await fakeInteraction._resolveOptions();
+    logger.info(`Prefix command executed: ${PREFIX}${commandName} by ${message.author.tag}`);
+    await command.execute(fakeInteraction, guildConfig, client);
+  } catch (error) {
+    logger.error(`Prefix command error (${commandName}):`, error);
+    const msg = error?.userMessage || error?.message || 'Something went wrong running that command.';
+    try { await message.reply(`❌ ${msg}`); } catch {}
+  }
+}
 
 
 
