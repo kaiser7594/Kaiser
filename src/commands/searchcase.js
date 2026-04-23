@@ -4,13 +4,15 @@ import { reply } from '../utils/reply.js';
 import { isAnyStaff } from '../permissions.js';
 import { listCasesForUser } from '../casesService.js';
 
+const TYPE_COLOR = { ban: 0xe74c3c, warn: 0xf1c40f, unban: 0x2ecc71 };
+
 export default {
   name: 's-c',
   aliases: ['searchcase', 'searchban'],
-  description: 'Look up moderation cases for a user (proof + reason + status).',
+  description: 'Look up the latest moderation case for a user (proof + reason + status).',
   slash: new SlashCommandBuilder()
     .setName('searchcase')
-    .setDescription('Look up moderation cases for a user.')
+    .setDescription('Look up the latest moderation case for a user.')
     .addStringOption((o) => o.setName('user_id').setDescription('User ID').setRequired(true)),
   async run(ctx) {
     const { interaction, member, guild, args } = ctx;
@@ -23,27 +25,32 @@ export default {
     if (!cases.length) return reply(ctx, `📭 No cases found for \`${targetId}\`.`);
 
     cases.sort((a, b) => b.id - a.id);
+    const c = cases[0];
 
-    const TYPE_EMOJI = { ban: '🔨', warn: '⚠️', unban: '✅' };
-    const STATUS_EMOJI = { executed: '✅', pending: '⏳', denied: '❌', failed: '⚠️' };
+    let targetTag = `<@${c.targetId}>`;
+    try {
+      const u = await ctx.client.users.fetch(c.targetId);
+      targetTag = `<@${c.targetId}> (${u.tag})`;
+    } catch {}
 
-    const recent = cases.slice(0, 10);
-    const lines = recent.map((c) => {
-      const ts = Math.floor(new Date(c.createdAt).getTime() / 1000);
-      return `**#${c.id}** ${TYPE_EMOJI[c.type] || ''} ${c.type.toUpperCase()} • ${STATUS_EMOJI[c.status] || ''} ${c.status} • <t:${ts}:d>\n` +
-             `Reason: ${c.reason || '_none_'}\nBy: <@${c.modId}>${c.approverId ? ` • Approved by <@${c.approverId}>` : ''}` +
-             (c.proofUrl ? `\n[proof](${c.proofUrl})` : '');
-    });
+    const ts = Math.floor(new Date(c.createdAt).getTime() / 1000);
+    const approver = c.approverId ? `<@${c.approverId}>` : (c.status === 'executed' ? `<@${c.modId}>` : '_pending_');
 
     const embed = new EmbedBuilder()
-      .setTitle(`🔎 Cases for \`${targetId}\``)
-      .setDescription(lines.join('\n\n'))
-      .setFooter({ text: `Showing ${recent.length} of ${cases.length} cases` })
-      .setColor(0x95a5a6);
+      .setTitle(`Latest case for ${c.targetId}`)
+      .setColor(TYPE_COLOR[c.type] || 0x7289da)
+      .addFields(
+        { name: 'Type', value: c.type.toUpperCase(), inline: true },
+        { name: 'Status', value: c.status, inline: true },
+        { name: 'Date', value: `<t:${ts}:F>`, inline: true },
+        { name: 'Target', value: `${targetTag}\n\`${c.targetId}\``, inline: false },
+        { name: 'Submitted by', value: `<@${c.modId}>`, inline: true },
+        { name: 'Approved/Executed by', value: approver, inline: true },
+        { name: 'Reason', value: c.reason || '_none_', inline: false },
+      )
+      .setFooter({ text: `Case #${c.id} • ${cases.length} total case(s) for this user` });
 
-    // Show the most recent case's proof image if available
-    const latestWithProof = recent.find((c) => c.proofUrl);
-    if (latestWithProof) embed.setImage(latestWithProof.proofUrl);
+    if (c.proofUrl) embed.setImage(c.proofUrl);
 
     return reply(ctx, { embeds: [embed], allowedMentions: { parse: [] } });
   },
