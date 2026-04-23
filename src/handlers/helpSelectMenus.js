@@ -24,7 +24,6 @@ const CATEGORY_ICONS = {
     Fun: "🎮",
     Leveling: "📊",
     Utility: "🔧",
-    Ticket: "🎫",
     Welcome: "👋",
     Giveaway: "🎉",
     Counter: "🔢",

@@ -24,7 +24,6 @@ const CATEGORY_ICONS = {
     Fun: "🎮",
     Leveling: "📊",
     Utility: "🔧",
-    Ticket: "🎫",
     Welcome: "👋",
     Giveaway: "🎉",
     Counter: "🔢",
@@ -89,11 +88,6 @@ async function createCategorySelectMenu() {
         {
             name: "📊 **Leveling**",
             value: "User levels, XP system, and progression tracking",
-            inline: true
-        },
-        {
-            name: "🎫 **Tickets**",
-            value: "Support ticket system for server management",
             inline: true
         },
         {
