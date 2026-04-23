@@ -10,6 +10,7 @@ import { addXp } from '../services/xpSystem.js';
 import { checkRateLimit } from '../utils/rateLimiter.js';
 import { createInteractionLike } from '../utils/prefixAdapter.js';
 import { getGuildConfig } from '../utils/database.js';
+import { addVouch, getVouchTypeForChannel, VOUCH_CONFIG } from '../services/vouchService.js';
 
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
@@ -23,6 +24,7 @@ export default {
 
       await handlePrefixCommand(message, client);
       await handleLeveling(message, client);
+      await handleVouchPings(message);
     } catch (error) {
       logger.error('Error in messageCreate event:', error);
     }
@@ -154,3 +156,40 @@ async function handleLeveling(message, client) {
 }
 
 
+
+async function handleVouchPings(message) {
+  try {
+    const vouchType = getVouchTypeForChannel(message.channelId);
+    if (!vouchType) return;
+
+    const mentionedUsers = message.mentions?.users;
+    if (!mentionedUsers || mentionedUsers.size === 0) return;
+
+    const cfg = VOUCH_CONFIG[vouchType];
+    const credited = new Set();
+
+    for (const [userId, user] of mentionedUsers) {
+      if (user.bot) continue;
+      if (userId === message.author.id) continue;
+      if (credited.has(userId)) continue;
+
+      const member = await message.guild.members.fetch(userId).catch(() => null);
+      if (!member?.roles?.cache?.has(cfg.roleId)) continue;
+
+      const ok = await addVouch({
+        guildId: message.guild.id,
+        userId,
+        vouchType,
+        channelId: message.channelId,
+        messageId: message.id,
+        fromUserId: message.author.id,
+      });
+      if (ok) {
+        credited.add(userId);
+        logger.info(`Vouch +1 (${vouchType}) for ${member.user.tag} in ${message.guild.name}`);
+      }
+    }
+  } catch (error) {
+    logger.error('Error handling vouch pings:', error);
+  }
+}

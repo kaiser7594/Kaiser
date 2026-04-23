@@ -405,7 +405,20 @@ class PostgreSQLDatabase {
                 value JSONB NOT NULL,
                 expires_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`
+            )`,
+
+            `CREATE TABLE IF NOT EXISTS ${pgConfig.tables.vouches} (
+                id BIGSERIAL PRIMARY KEY,
+                guild_id VARCHAR(32) NOT NULL,
+                user_id VARCHAR(32) NOT NULL,
+                vouch_type VARCHAR(16) NOT NULL,
+                channel_id VARCHAR(32),
+                message_id VARCHAR(32),
+                from_user_id VARCHAR(32),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+
+            `CREATE INDEX IF NOT EXISTS idx_vouches_lookup ON ${pgConfig.tables.vouches} (guild_id, user_id, vouch_type, created_at)`
         ];
 
         for (const table of tables) {
