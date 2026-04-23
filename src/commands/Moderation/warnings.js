@@ -60,11 +60,13 @@ export default {
                     const discordTimestamp = Math.floor(w.timestamp / 1000);
                     return {
                         name: `[#${i + 1}] Reason: ${w.reason.substring(0, 100)}`,
-                        value: `**Moderator:** <@${w.moderatorId}>\n**Date:** <t:${discordTimestamp}:F> (<t:${discordTimestamp}:R>)`,
+                        value: `**Warning ID:** \`${w.id}\`\n**Moderator:** <@${w.moderatorId}>\n**Date:** <t:${discordTimestamp}:F> (<t:${discordTimestamp}:R>)`,
                         inline: false,
                     };
                 })
                 .slice(0, 25);
+
+            embed.setFooter({ text: 'Use the Warning ID with /removewarn to delete a specific warning.' });
 
             embed.addFields(warningFields);
 

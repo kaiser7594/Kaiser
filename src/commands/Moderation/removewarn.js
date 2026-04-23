@@ -18,9 +18,9 @@ export default {
         )
         .addStringOption((o) =>
             o
-                .setName("warning")
+                .setName("warning_id")
                 .setRequired(false)
-                .setDescription("Warning number from /warnings (omit to remove the most recent)"),
+                .setDescription("Warning ID from /warnings (omit to remove the most recent)"),
         )
         .addStringOption((o) =>
             o
@@ -56,21 +56,17 @@ export default {
                 throw new TitanBotError("No warnings", ErrorTypes.VALIDATION, `${target.tag} has no warnings to remove.`);
             }
 
-            const warningArg = interaction.options.getString("warning");
+            const warningArg = interaction.options.getString("warning_id") || interaction.options.getString("warning");
             let chosen;
             if (warningArg) {
-                const num = parseInt(warningArg, 10);
-                if (!Number.isInteger(num) || num < 1 || num > warnings.length) {
-                    chosen = warnings.find(w => String(w.id) === String(warningArg));
-                    if (!chosen) {
-                        throw new TitanBotError(
-                            "Warning not found",
-                            ErrorTypes.VALIDATION,
-                            `Warning #${warningArg} not found. This user has ${warnings.length} warning(s). Use /warnings to view them.`
-                        );
-                    }
-                } else {
-                    chosen = warnings[num - 1];
+                chosen = warnings.find(w => String(w.id) === String(warningArg).trim());
+                if (!chosen) {
+                    const idList = warnings.map(w => `\`${w.id}\``).join(', ');
+                    throw new TitanBotError(
+                        "Warning ID not matched",
+                        ErrorTypes.VALIDATION,
+                        `No warning with ID \`${warningArg}\` for ${target.tag}. Use /warnings to see valid IDs.\n\n**Available IDs:** ${idList}`
+                    );
                 }
             } else {
                 chosen = warnings[warnings.length - 1];
