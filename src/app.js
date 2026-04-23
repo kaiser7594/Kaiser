@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 import { storage } from './storage.js';
 import { loadCommands, registerSlashCommands } from './commandLoader.js';
 import { handleMessage, handleInteraction } from './dispatcher.js';
-import { trackVouchPings, handleVouchMessageDelete } from './vouchTracker.js';
+import { trackVouchPings, handleVouchMessageDelete, handleVouchMessageUpdate } from './vouchTracker.js';
 
 async function main() {
   if (!process.env.DISCORD_TOKEN || !process.env.CLIENT_ID) {
@@ -40,6 +40,10 @@ async function main() {
   });
 
   client.on('interactionCreate', (i) => handleInteraction(client, i));
+
+  client.on('messageUpdate', async (oldM, newM) => {
+    try { await handleVouchMessageUpdate(client, oldM, newM); } catch (e) { logger.error('vouch update error:', e); }
+  });
 
   client.on('messageDelete', async (m) => {
     try { await handleVouchMessageDelete(client, m); } catch (e) { logger.error('vouch delete error:', e); }
