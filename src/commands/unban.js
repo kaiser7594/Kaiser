@@ -1,21 +1,27 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { extractUserId } from '../utils/parse.js';
 import { reply } from '../utils/reply.js';
-import { hasModPerm } from '../permissions.js';
-import { clearBan } from '../banLog.js';
+import { isHighTeam, isLowTeam } from '../permissions.js';
+import { getProofAttachment } from '../utils/proof.js';
+import { executeUnban } from '../moderation.js';
+import { createCase } from '../casesService.js';
+import { submitForApproval } from '../approvalFlow.js';
 
 export default {
   name: 'unban',
   aliases: [],
-  description: 'Unban a user by ID.',
+  description: 'Unban a user by ID. Proof image required.',
   slash: new SlashCommandBuilder()
     .setName('unban')
-    .setDescription('Unban a user by ID.')
+    .setDescription('Unban a user by ID. Proof image required.')
     .addStringOption((o) => o.setName('user_id').setDescription('User ID to unban').setRequired(true))
+    .addAttachmentOption((o) => o.setName('proof').setDescription('Proof image').setRequired(true))
     .addStringOption((o) => o.setName('reason').setDescription('Reason').setRequired(false)),
   async run(ctx) {
     const { interaction, member, guild, args } = ctx;
-    if (!hasModPerm(member)) return reply(ctx, '❌ You need ban permissions to use this.');
+    const high = await isHighTeam(member);
+    const low = await isLowTeam(member);
+    if (!high && !low) return reply(ctx, '❌ Only high team or trainee staff can use this.');
 
     let targetId, reason;
     if (interaction) {
@@ -27,17 +33,26 @@ export default {
     }
     if (!targetId) return reply(ctx, '❌ Provide a valid user ID.');
 
-    // Verify the user is currently banned
     const ban = await guild.bans.fetch(targetId).catch(() => null);
     if (!ban) return reply(ctx, `⚠️ User \`${targetId}\` is not currently banned.`);
 
-    try {
-      await guild.bans.remove(targetId, `${reason} | by ${ctx.user.tag}`);
-      await clearBan(guild.id, targetId);
-      return reply(ctx, `✅ Unbanned \`${targetId}\` — reason: ${reason}`);
-    } catch (e) {
-      if (e.code === 50013) return reply(ctx, '❌ I lack permission to unban that user.');
-      return reply(ctx, `❌ Could not unban: ${e.message}`);
+    const att = await getProofAttachment(ctx);
+    if (!att) return reply(ctx, '❌ Proof image is required. Action cancelled.');
+
+    if (high) {
+      const res = await executeUnban(guild, targetId, ctx.user.tag, reason);
+      if (!res.ok) return reply(ctx, `❌ Could not unban: ${res.reason}${res.error ? ` (${res.error})` : ''}`);
+      const c = await createCase(guild.id, {
+        type: 'unban', targetId, modId: ctx.user.id, reason, proofUrl: att.url, status: 'executed', channelId: ctx.channel.id,
+      });
+      return reply(ctx, `✅ Unbanned \`${targetId}\` — Case #${c.id}\nReason: ${reason}`);
     }
+
+    const c = await createCase(guild.id, {
+      type: 'unban', targetId, modId: ctx.user.id, reason, proofUrl: att.url, status: 'pending', channelId: ctx.channel.id,
+    });
+    const sub = await submitForApproval(ctx.client, guild, ctx.user, c);
+    if (!sub.ok) return reply(ctx, `❌ Could not submit for approval: ${sub.reason}. Ask an admin to set the trainee channel.`);
+    return reply(ctx, `📨 Unban request submitted for high-team approval — Case #${c.id}.`);
   },
 };

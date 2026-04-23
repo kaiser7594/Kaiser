@@ -2,6 +2,7 @@ import { storage } from './storage.js';
 import { getConfig } from './guildConfig.js';
 
 const userKey = (gid, uid) => `k:guild:${gid}:vouch:${uid}`;
+const histKey = (gid, uid) => `k:guild:${gid}:vouchhist:${uid}`;
 const monthTag = (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 
 const blank = () => ({
@@ -26,13 +27,24 @@ export async function getProfile(guildId, userId) {
   return rolloverIfNeeded(raw || blank());
 }
 
-export async function addVouch(guildId, userId, type) {
+export async function addVouch(guildId, userId, type, meta = {}) {
   const obj = await getProfile(guildId, userId);
   obj[type].month += 1;
   obj[type].alltime += 1;
   obj[type].lastAt = new Date().toISOString();
   await storage.set(userKey(guildId, userId), obj);
+
+  const list = (await storage.get(histKey(guildId, userId), [])) || [];
+  list.push({ type, byUserId: meta.byUserId || null, channelId: meta.channelId || null, messageUrl: meta.messageUrl || null, at: new Date().toISOString() });
+  if (list.length > 200) list.splice(0, list.length - 200);
+  await storage.set(histKey(guildId, userId), list);
+
   return obj;
+}
+
+export async function listVouchHistory(guildId, userId, limit = 25) {
+  const list = (await storage.get(histKey(guildId, userId), [])) || [];
+  return list.slice(-limit).reverse();
 }
 
 export async function listLeaderboard(guildId, type, scope = 'month', limit = 25) {

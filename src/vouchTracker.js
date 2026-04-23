@@ -32,6 +32,10 @@ export async function trackVouchPings(client, message) {
     }
     const ok = roleIds.some((r) => member.roles.cache.has(r));
     if (!ok) continue;
-    await addVouch(message.guild.id, uid, type);
+    await addVouch(message.guild.id, uid, type, {
+      byUserId: message.author.id,
+      channelId: message.channel.id,
+      messageUrl: message.url,
+    });
   }
 }

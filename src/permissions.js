@@ -17,10 +17,24 @@ export async function hasCmdControl(member) {
   return (cfg.cmdControlRoleIds || []).some((r) => member.roles.cache.has(r));
 }
 
-export async function hasHighTeam(member) {
+export async function isHighTeam(member) {
+  if (!member) return false;
   if (isAdminOrOwner(member)) return true;
   const cfg = await getConfig(member.guild.id);
   return (cfg.highTeamRoleIds || []).some((r) => member.roles.cache.has(r));
+}
+
+export async function isLowTeam(member) {
+  if (!member) return false;
+  const cfg = await getConfig(member.guild.id);
+  return (cfg.lowTeamRoleIds || []).some((r) => member.roles.cache.has(r));
+}
+
+// Either staff tier (used to gate ban/warn/unban entry)
+export async function isAnyStaff(member) {
+  if (await isHighTeam(member)) return true;
+  if (await isLowTeam(member)) return true;
+  return false;
 }
 
 export function hasModPerm(member) {

@@ -1,19 +1,26 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { reply } from '../utils/reply.js';
-import { isAdminOrOwner, hasManageGuild } from '../permissions.js';
+import { isAdminOrOwner, hasManageGuild, isHighTeam } from '../permissions.js';
 import { clearBan } from '../banLog.js';
 
-const PER_REQUEST_DELAY_MS = 1100; // stay safely under Discord rate limits
+const PER_REQUEST_DELAY_MS = 1100;
 
 export default {
   name: 'massunban',
   aliases: ['unbanall'],
-  description: 'Unban every user currently banned, with live progress.',
-  slash: new SlashCommandBuilder().setName('massunban').setDescription('Unban every banned user.'),
+  description: 'Unban every user currently banned. Use `k!massunban confirm` to actually run.',
+  slash: new SlashCommandBuilder()
+    .setName('massunban')
+    .setDescription('Unban every banned user.')
+    .addStringOption((o) => o.setName('confirm').setDescription('Type "confirm" to run').setRequired(true)),
   async run(ctx) {
-    const { member, guild, interaction, message } = ctx;
-    if (!(isAdminOrOwner(member) || hasManageGuild(member))) {
-      return reply(ctx, '❌ Only Admins/Manage Server can run a mass unban.');
+    const { interaction, member, guild, args, message } = ctx;
+    const allowed = isAdminOrOwner(member) || hasManageGuild(member) || (await isHighTeam(member));
+    if (!allowed) return reply(ctx, '❌ Only high team / Manage Server can run a mass unban.');
+
+    const arg = (interaction ? interaction.options.getString('confirm') : args[0])?.toLowerCase();
+    if (arg !== 'confirm') {
+      return reply(ctx, '⚠️ This will unban **every** banned user. Run `k!massunban confirm` (or `/massunban confirm:confirm`) to proceed.');
     }
 
     let bans;

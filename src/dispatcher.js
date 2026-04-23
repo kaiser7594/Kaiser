@@ -48,6 +48,16 @@ export async function handleMessage(client, message) {
 }
 
 export async function handleInteraction(client, interaction) {
+  if (interaction.isButton && interaction.isButton()) {
+    const [action, caseId] = (interaction.customId || '').split(':');
+    if (action === 'case_allow' || action === 'case_deny') {
+      const { handleCaseDecision } = await import('./approvalFlow.js');
+      try { await handleCaseDecision(client, interaction, caseId, action === 'case_allow'); }
+      catch (e) { logger.error('case decision error:', e); }
+      return;
+    }
+    return;
+  }
   if (!interaction.isChatInputCommand()) return;
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;
