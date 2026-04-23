@@ -75,7 +75,7 @@ async function createInitialHelpMenu(client) {
     const botName = client?.user?.username || "Bot";
     const embed = createEmbed({ 
         title: `🤖 ${botName} Help Center`,
-        description: "Your all-in-one Discord companion for moderation, economy, fun, and server management.",
+        description: "Your all-in-one Discord companion for moderation, economy, fun, and server management.\n\n**💡 Tip:** Every command works two ways — as a slash command (`/command`) **or** with the prefix `k!` (e.g. `k!ban <user_id> <reason>`).",
         color: 'primary'
     });
 

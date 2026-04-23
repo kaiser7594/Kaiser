@@ -22,6 +22,12 @@ export default {
                 .setRequired(false)
                 .setDescription("Warning number from /warnings (omit to remove the most recent)"),
         )
+        .addStringOption((o) =>
+            o
+                .setName("reason")
+                .setRequired(false)
+                .setDescription("Reason for removing this warning"),
+        )
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
     category: "moderation",
 
@@ -64,6 +70,7 @@ export default {
                 chosen = warnings[warnings.length - 1];
             }
 
+            const removalReason = interaction.options.getString("reason") || "No reason provided";
             const result = await WarningService.removeWarning(interaction.guildId, rawId, chosen.id);
             if (!result?.success) {
                 throw new Error(result?.error || "Failed to remove warning.");
@@ -76,7 +83,7 @@ export default {
                     action: "Warning Removed",
                     target: `${target.tag} (${target.id})`,
                     executor: `${interaction.user.tag} (${interaction.user.id})`,
-                    reason: chosen.reason || "No reason recorded",
+                    reason: `Removal: ${removalReason} | Original: ${chosen.reason || 'N/A'}`,
                     metadata: {
                         userId: target.id,
                         moderatorId: interaction.user.id,
@@ -90,7 +97,7 @@ export default {
                 embeds: [
                     successEmbed(
                         `✅ Warning removed from ${target.tag}`,
-                        `**Original Reason:** ${chosen.reason || 'N/A'}\n**Remaining Warnings:** ${warnings.length - 1}`
+                        `**Original Reason:** ${chosen.reason || 'N/A'}\n**Removal Reason:** ${removalReason}\n**Remaining Warnings:** ${warnings.length - 1}`
                     )
                 ]
             });

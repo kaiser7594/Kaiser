@@ -11,7 +11,7 @@ channel = "stable-25_05"
 PORT = "5000"
 WEB_HOST = "0.0.0.0"
 NODE_ENV = "development"
-GUILD_ID = "1010719364070248521"
+GUILD_ID = "1234970833370218506"
 
 [workflows]
 runButton = "Project"
