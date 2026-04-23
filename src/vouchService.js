@@ -35,10 +35,29 @@ export async function addVouch(guildId, userId, type, meta = {}) {
   await storage.set(userKey(guildId, userId), obj);
 
   const list = (await storage.get(histKey(guildId, userId), [])) || [];
-  list.push({ type, byUserId: meta.byUserId || null, channelId: meta.channelId || null, messageUrl: meta.messageUrl || null, at: new Date().toISOString() });
+  list.push({ type, byUserId: meta.byUserId || null, channelId: meta.channelId || null, messageUrl: meta.messageUrl || null, sourceMessageId: meta.sourceMessageId || null, at: new Date().toISOString() });
   if (list.length > 200) list.splice(0, list.length - 200);
   await storage.set(histKey(guildId, userId), list);
 
+  return obj;
+}
+
+export async function removeVouch(guildId, userId, type, sourceMessageId = null) {
+  const obj = await getProfile(guildId, userId);
+  if (obj[type].month > 0) obj[type].month -= 1;
+  if (obj[type].alltime > 0) obj[type].alltime -= 1;
+  await storage.set(userKey(guildId, userId), obj);
+
+  const list = (await storage.get(histKey(guildId, userId), [])) || [];
+  let idx = -1;
+  if (sourceMessageId) {
+    idx = list.findIndex((e) => e.type === type && e.sourceMessageId === sourceMessageId);
+  }
+  if (idx === -1) {
+    for (let i = list.length - 1; i >= 0; i--) if (list[i].type === type) { idx = i; break; }
+  }
+  if (idx !== -1) list.splice(idx, 1);
+  await storage.set(histKey(guildId, userId), list);
   return obj;
 }
 

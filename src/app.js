@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 import { storage } from './storage.js';
 import { loadCommands, registerSlashCommands } from './commandLoader.js';
 import { handleMessage, handleInteraction } from './dispatcher.js';
-import { trackVouchPings } from './vouchTracker.js';
+import { trackVouchPings, handleVouchMessageDelete } from './vouchTracker.js';
 
 async function main() {
   if (!process.env.DISCORD_TOKEN || !process.env.CLIENT_ID) {
@@ -40,6 +40,16 @@ async function main() {
   });
 
   client.on('interactionCreate', (i) => handleInteraction(client, i));
+
+  client.on('messageDelete', async (m) => {
+    try { await handleVouchMessageDelete(client, m); } catch (e) { logger.error('vouch delete error:', e); }
+  });
+
+  client.on('messageDeleteBulk', async (msgs) => {
+    for (const m of msgs.values()) {
+      try { await handleVouchMessageDelete(client, m); } catch (e) { logger.error('vouch bulk delete error:', e); }
+    }
+  });
 
   // Healthcheck server (Replit web preview)
   const app = express();
