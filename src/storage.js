@@ -57,8 +57,8 @@ class Storage {
       return true;
     }
     await this.pool.query(
-      'INSERT INTO kbot_kv (k, v, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (k) DO UPDATE SET v = $2, updated_at = NOW()',
-      [key, value]
+      'INSERT INTO kbot_kv (k, v, updated_at) VALUES ($1, $2::jsonb, NOW()) ON CONFLICT (k) DO UPDATE SET v = $2::jsonb, updated_at = NOW()',
+      [key, JSON.stringify(value)]
     );
     return true;
   }
