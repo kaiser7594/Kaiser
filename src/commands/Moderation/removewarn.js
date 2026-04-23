@@ -3,7 +3,7 @@ import { successEmbed } from '../../utils/embeds.js';
 import { logModerationAction } from '../../utils/moderation.js';
 import { logger } from '../../utils/logger.js';
 import { WarningService } from '../../services/warningService.js';
-import { handleInteractionError } from '../../utils/errorHandler.js';
+import { handleInteractionError, TitanBotError, ErrorTypes } from '../../utils/errorHandler.js';
 import { InteractionHelper } from '../../utils/interactionHelper.js';
 
 export default {
@@ -43,15 +43,17 @@ export default {
             ).toString().trim().replace(/[<@!>]/g, "");
 
             if (!/^\d{17,20}$/.test(rawId)) {
-                throw new Error("Please provide a valid user ID (17-20 digits).");
+                throw new TitanBotError("Invalid user ID", ErrorTypes.VALIDATION, "Please provide a valid user ID (17-20 digits).");
             }
 
             const target = await client.users.fetch(rawId).catch(() => null);
-            if (!target) throw new Error("Could not resolve that user ID.");
+            if (!target) {
+                throw new TitanBotError("User not found", ErrorTypes.VALIDATION, "Could not resolve that user ID.");
+            }
 
             const warnings = await WarningService.getWarnings(interaction.guildId, rawId);
             if (!warnings.length) {
-                throw new Error(`${target.tag} has no warnings to remove.`);
+                throw new TitanBotError("No warnings", ErrorTypes.VALIDATION, `${target.tag} has no warnings to remove.`);
             }
 
             const warningArg = interaction.options.getString("warning");
@@ -61,7 +63,11 @@ export default {
                 if (!Number.isInteger(num) || num < 1 || num > warnings.length) {
                     chosen = warnings.find(w => String(w.id) === String(warningArg));
                     if (!chosen) {
-                        throw new Error(`Warning #${warningArg} not found. This user has ${warnings.length} warning(s).`);
+                        throw new TitanBotError(
+                            "Warning not found",
+                            ErrorTypes.VALIDATION,
+                            `Warning #${warningArg} not found. This user has ${warnings.length} warning(s). Use /warnings to view them.`
+                        );
                     }
                 } else {
                     chosen = warnings[num - 1];
@@ -73,7 +79,11 @@ export default {
             const removalReason = interaction.options.getString("reason") || "No reason provided";
             const result = await WarningService.removeWarning(interaction.guildId, rawId, chosen.id);
             if (!result?.success) {
-                throw new Error(result?.error || "Failed to remove warning.");
+                throw new TitanBotError(
+                    "Remove failed",
+                    ErrorTypes.DATABASE,
+                    result?.error || "Failed to remove warning. Please try again."
+                );
             }
 
             await logModerationAction({
