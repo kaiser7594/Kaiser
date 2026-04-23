@@ -74,6 +74,33 @@ export async function getTotalCount(guildId, userId, vouchType) {
     }
 }
 
+export async function getLeaderboard(guildId, vouchType, { period = 'monthly', limit = 10 } = {}) {
+    if (!pgDb.isAvailable?.()) return [];
+    try {
+        const params = [guildId, vouchType];
+        let where = `WHERE guild_id = $1 AND vouch_type = $2`;
+        if (period === 'monthly') {
+            params.push(startOfMonthIso());
+            where += ` AND created_at >= $3`;
+        }
+        params.push(limit);
+        const limitParam = `$${params.length}`;
+        const result = await pgDb.pool.query(
+            `SELECT user_id, COUNT(*)::int AS count
+             FROM ${pgConfig.tables.vouches}
+             ${where}
+             GROUP BY user_id
+             ORDER BY count DESC, MAX(created_at) ASC
+             LIMIT ${limitParam}`,
+            params
+        );
+        return result.rows;
+    } catch (e) {
+        logger.error('getLeaderboard error:', e);
+        return [];
+    }
+}
+
 export async function getProfile(guildId, userId) {
     const result = {};
     for (const type of Object.keys(VOUCH_CONFIG)) {
