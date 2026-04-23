@@ -17,6 +17,17 @@ export const VOUCH_CONFIG = {
     },
 };
 
+export const VOUCH_COMMAND_ROLE_IDS = [
+    '1234970833408233571',
+    '1234970833399709909',
+    '1234970833408233565',
+];
+
+export function memberCanUseVouchCommands(member) {
+    if (!member?.roles?.cache) return false;
+    return VOUCH_COMMAND_ROLE_IDS.some((id) => member.roles.cache.has(id));
+}
+
 export function getVouchTypeForChannel(channelId) {
     for (const [type, cfg] of Object.entries(VOUCH_CONFIG)) {
         if (cfg.channelId === channelId) return type;

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { createEmbed } from '../../utils/embeds.js';
 import { getColor } from '../../config/bot.js';
-import { getProfile, VOUCH_CONFIG } from '../../services/vouchService.js';
+import { getProfile, VOUCH_CONFIG, memberCanUseVouchCommands } from '../../services/vouchService.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -12,6 +12,11 @@ export default {
         ),
 
     async execute(interaction) {
+        const invoker = interaction.member || (await interaction.guild.members.fetch(interaction.user.id).catch(() => null));
+        if (!memberCanUseVouchCommands(invoker)) {
+            return interaction.reply({ content: '❌ You need the Middleman or Pilot role to use this command.', ephemeral: true });
+        }
+
         const target = interaction.options.getUser('user') || interaction.user;
         const member = await interaction.guild.members.fetch(target.id).catch(() => null);
 

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { createEmbed } from '../../utils/embeds.js';
 import { getColor } from '../../config/bot.js';
-import { getLeaderboard, VOUCH_CONFIG } from '../../services/vouchService.js';
+import { getLeaderboard, VOUCH_CONFIG, memberCanUseVouchCommands } from '../../services/vouchService.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -18,6 +18,11 @@ export default {
         ),
 
     async execute(interaction) {
+        const invoker = interaction.member || (await interaction.guild.members.fetch(interaction.user.id).catch(() => null));
+        if (!memberCanUseVouchCommands(invoker)) {
+            return interaction.reply({ content: '❌ You need the Middleman or Pilot role to use this command.', ephemeral: true });
+        }
+
         const period = interaction.options.getString('period') || 'monthly';
         const cfg = VOUCH_CONFIG.pilot;
         const rows = await getLeaderboard(interaction.guildId, 'pilot', { period, limit: 10 });
