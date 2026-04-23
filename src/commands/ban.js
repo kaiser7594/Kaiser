@@ -6,6 +6,7 @@ import { getProofAttachment } from '../utils/proof.js';
 import { executeBan } from '../moderation.js';
 import { createCase } from '../casesService.js';
 import { submitForApproval } from '../approvalFlow.js';
+import { dmModerationAction } from '../utils/dm.js';
 
 export default {
   name: 'ban',
@@ -44,6 +45,8 @@ export default {
     if (!att) return reply(ctx, '❌ Proof image is required. Action cancelled.');
 
     if (high) {
+      // DM the target BEFORE the ban (banned users can't receive DMs from servers they're not in)
+      await dmModerationAction(ctx.client, { type: 'ban', targetId, guildName: guild.name, reason, modTag: ctx.user.tag, proofUrl: att.url });
       const res = await executeBan(guild, targetId, ctx.user.id, ctx.user.tag, reason);
       if (!res.ok) {
         if (res.reason === 'already_banned') return reply(ctx, `⚠️ User \`${targetId}\` is already banned.`);

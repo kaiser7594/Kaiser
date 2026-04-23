@@ -6,6 +6,7 @@ import { getProofAttachment } from '../utils/proof.js';
 import { executeWarn } from '../moderation.js';
 import { createCase } from '../casesService.js';
 import { submitForApproval } from '../approvalFlow.js';
+import { dmModerationAction } from '../utils/dm.js';
 
 export default {
   name: 'warn',
@@ -43,6 +44,7 @@ export default {
       const c = await createCase(guild.id, {
         type: 'warn', targetId, modId: ctx.user.id, reason, proofUrl: att.url, status: 'executed', channelId: ctx.channel.id, warningId: res.warning.id,
       });
+      await dmModerationAction(ctx.client, { type: 'warn', targetId, guildName: guild.name, reason, modTag: ctx.user.tag, proofUrl: att.url, warningId: res.warning.id });
       return reply(ctx, `⚠️ Warned <@${targetId}> — Warning #${res.warning.id} • Case #${c.id}\nReason: ${reason}`);
     }
 

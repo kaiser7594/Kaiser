@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import { reply } from '../utils/reply.js';
 import { hasModPerm } from '../permissions.js';
 import { findWarningById, removeWarning } from '../warningService.js';
+import { dmModerationAction } from '../utils/dm.js';
 
 export default {
   name: 'removewarn',
@@ -31,6 +32,15 @@ export default {
 
     const removed = await removeWarning(guild.id, found.userId, warnId, ctx.user.id, reason);
     if (!removed) return reply(ctx, `❌ Could not remove warning #${warnId}.`);
+
+    await dmModerationAction(ctx.client, {
+      type: 'removewarn',
+      targetId: found.userId,
+      guildName: guild.name,
+      reason: `Original: ${removed.reason}\nRemoval reason: ${reason}`,
+      modTag: ctx.user.tag,
+      warningId: warnId,
+    });
 
     return reply(ctx, `✅ Removed warning **#${warnId}** from <@${found.userId}>.\nOriginal reason: ${removed.reason}\nRemoval reason: ${reason}`);
   },

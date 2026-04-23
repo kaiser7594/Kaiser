@@ -58,6 +58,14 @@ export async function handleInteraction(client, interaction) {
     }
     return;
   }
+  if (interaction.isModalSubmit && interaction.isModalSubmit()) {
+    if ((interaction.customId || '').startsWith('case_deny_modal:')) {
+      const { handleDenyModal } = await import('./approvalFlow.js');
+      try { await handleDenyModal(client, interaction); }
+      catch (e) { logger.error('deny modal error:', e); }
+    }
+    return;
+  }
   if (!interaction.isChatInputCommand()) return;
   const cmd = client.commands.get(interaction.commandName);
   if (!cmd) return;

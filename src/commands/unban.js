@@ -6,6 +6,7 @@ import { getProofAttachment } from '../utils/proof.js';
 import { executeUnban } from '../moderation.js';
 import { createCase } from '../casesService.js';
 import { submitForApproval } from '../approvalFlow.js';
+import { dmModerationAction } from '../utils/dm.js';
 
 export default {
   name: 'unban',
@@ -45,6 +46,7 @@ export default {
       const c = await createCase(guild.id, {
         type: 'unban', targetId, modId: ctx.user.id, reason, proofUrl: att.url, status: 'executed', channelId: ctx.channel.id,
       });
+      await dmModerationAction(ctx.client, { type: 'unban', targetId, guildName: guild.name, reason, modTag: ctx.user.tag, proofUrl: att.url });
       return reply(ctx, `✅ Unbanned \`${targetId}\` — Case #${c.id}\nReason: ${reason}`);
     }
 
