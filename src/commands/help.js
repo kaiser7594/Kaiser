@@ -26,8 +26,8 @@ export default {
     const setup = [
       '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>` · `k!setticketchannel <#ch>` · `k!setstaffquotachannel <#ch>`',
       '`k!setmmvouchrole <@role>` · `k!setpilotvouchrole <@role>` · `k!setstaffrole <@role>`',
-      '`k!setmmquota <n>` · `k!setpilotquota <n>` · `k!setstaffquota <n>` (0 = off)',
-      '`k!removemmquota` · `k!removepilotquota` · `k!removestaffquota`',
+      '`k!setmmquota <n>` · `k!setpilotquota <n>` · `k!setstaffquota <n>` · `k!setticketquota <n>` · `k!setmessagequota <n>` (0 = off)',
+      '`k!removemmquota` · `k!removepilotquota` · `k!removestaffquota` · `k!removeticketquota` · `k!removemessagequota`',
       '`k!resetvouches <month|alltime|all> [user/id]`',
       '`k!config` — view current setup',
     ].join('\n');

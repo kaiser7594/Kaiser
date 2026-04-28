@@ -48,8 +48,10 @@ export default {
         `🛡️ **Staff**`,
         `🔗 Works — month: **${profile.staff.month}** • all time: **${profile.staff.alltime}**` +
           (cfg.staffQuota > 0 ? ` • Quota: **${profile.staff.month}/${cfg.staffQuota}**` : ''),
-        `🎫 Tickets — month: **${profile.ticket.month}** • all time: **${profile.ticket.alltime}**`,
-        `💬 Messages — month: **${profile.staffmsg.month}** • all time: **${profile.staffmsg.alltime}**`,
+        `🎫 Tickets — month: **${profile.ticket.month}** • all time: **${profile.ticket.alltime}**` +
+          (cfg.ticketQuota > 0 ? ` • Quota: **${profile.ticket.month}/${cfg.ticketQuota}**` : ''),
+        `💬 Messages — month: **${profile.staffmsg.month}** • all time: **${profile.staffmsg.alltime}**` +
+          (cfg.messageQuota > 0 ? ` • Quota: **${profile.staffmsg.month}/${cfg.messageQuota}**` : ''),
       ].join('\n'));
     }
     if (!sections.length) {
