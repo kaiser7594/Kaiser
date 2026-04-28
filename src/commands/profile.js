@@ -30,18 +30,31 @@ export default {
     const profile = await getProfile(guild.id, targetId);
     const cfg = await getConfig(guild.id);
 
+    const hasMM = !!tMember && (cfg.mmVouchRoleIds || []).some((r) => tMember.roles.cache.has(r));
+    const hasPilot = !!tMember && (cfg.pilotVouchRoleIds || []).some((r) => tMember.roles.cache.has(r));
+    const hasStaff = !!tMember && (cfg.staffRoleIds || []).some((r) => tMember.roles.cache.has(r));
+
     const sections = [];
-    sections.push(`🤝 **Middleman**\nThis month: **${profile.mm.month}** • All time: **${profile.mm.alltime}**` +
-      (cfg.mmQuota > 0 ? ` • Quota: **${profile.mm.month}/${cfg.mmQuota}**` : ''));
-    sections.push(`✈️ **Pilot**\nThis month: **${profile.pilot.month}** • All time: **${profile.pilot.alltime}**` +
-      (cfg.pilotQuota > 0 ? ` • Quota: **${profile.pilot.month}/${cfg.pilotQuota}**` : ''));
-    sections.push([
-      `🛡️ **Staff**`,
-      `🔗 Works — month: **${profile.staff.month}** • all time: **${profile.staff.alltime}**` +
-        (cfg.staffQuota > 0 ? ` • Quota: **${profile.staff.month}/${cfg.staffQuota}**` : ''),
-      `🎫 Tickets — month: **${profile.ticket.month}** • all time: **${profile.ticket.alltime}**`,
-      `💬 Messages — month: **${profile.staffmsg.month}** • all time: **${profile.staffmsg.alltime}**`,
-    ].join('\n'));
+    if (hasMM) {
+      sections.push(`🤝 **Middleman**\nThis month: **${profile.mm.month}** • All time: **${profile.mm.alltime}**` +
+        (cfg.mmQuota > 0 ? ` • Quota: **${profile.mm.month}/${cfg.mmQuota}**` : ''));
+    }
+    if (hasPilot) {
+      sections.push(`✈️ **Pilot**\nThis month: **${profile.pilot.month}** • All time: **${profile.pilot.alltime}**` +
+        (cfg.pilotQuota > 0 ? ` • Quota: **${profile.pilot.month}/${cfg.pilotQuota}**` : ''));
+    }
+    if (hasStaff) {
+      sections.push([
+        `🛡️ **Staff**`,
+        `🔗 Works — month: **${profile.staff.month}** • all time: **${profile.staff.alltime}**` +
+          (cfg.staffQuota > 0 ? ` • Quota: **${profile.staff.month}/${cfg.staffQuota}**` : ''),
+        `🎫 Tickets — month: **${profile.ticket.month}** • all time: **${profile.ticket.alltime}**`,
+        `💬 Messages — month: **${profile.staffmsg.month}** • all time: **${profile.staffmsg.alltime}**`,
+      ].join('\n'));
+    }
+    if (!sections.length) {
+      sections.push('_This user has no middleman, pilot, or staff role._');
+    }
 
     const monthName = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const displayName = target ? (target.username || target.tag) : `User ${targetId}`;
