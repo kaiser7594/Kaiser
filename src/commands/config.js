@@ -17,15 +17,17 @@ export default {
       .addFields(
         { name: 'Middleman Channel', value: fmtChan(c.mmChannelId), inline: true },
         { name: 'Pilot Channel', value: fmtChan(c.pilotChannelId), inline: true },
-        { name: '\u200b', value: '\u200b', inline: true },
+        { name: 'Staff Channel', value: fmtChan(c.staffChannelId), inline: true },
         { name: 'MM Vouch Roles', value: fmtRoles(c.mmVouchRoleIds), inline: true },
         { name: 'Pilot Vouch Roles', value: fmtRoles(c.pilotVouchRoleIds), inline: true },
-        { name: '\u200b', value: '\u200b', inline: true },
+        { name: 'Staff Roles', value: fmtRoles(c.staffRoleIds), inline: true },
         { name: 'MM Quota', value: c.mmQuota > 0 ? String(c.mmQuota) : '_off_', inline: true },
         { name: 'Pilot Quota', value: c.pilotQuota > 0 ? String(c.pilotQuota) : '_off_', inline: true },
-        { name: '\u200b', value: '\u200b', inline: true },
+        { name: 'Staff Quota', value: c.staffQuota > 0 ? String(c.staffQuota) : '_off_', inline: true },
+        { name: 'Trainee Approval Channel', value: fmtChan(c.traineeChannelId), inline: false },
         { name: 'Setup Cmd Roles', value: fmtRoles(c.cmdControlRoleIds), inline: false },
         { name: 'High Team Roles', value: fmtRoles(c.highTeamRoleIds), inline: false },
+        { name: 'Low Team (Trainee) Roles', value: fmtRoles(c.lowTeamRoleIds), inline: false },
       )
       .setColor(0x95a5a6);
     return reply(ctx, { embeds: [embed], allowedMentions: { parse: [] } });

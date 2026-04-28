@@ -8,11 +8,12 @@ export default {
   slash: new SlashCommandBuilder().setName('help').setDescription('List all commands.'),
   async run(ctx) {
     const vouches = [
-      '`k!p [user/id]` — show vouch profile',
+      '`k!p [user/id]` — show vouch / work profile',
       '`k!mmlb` — middleman leaderboard',
       '`k!pilotlb` — pilot leaderboard',
+      '`k!stafflb` — staff work leaderboard',
       '`k!vouches [user/id]` — vouch history',
-      '_Vouches reset monthly._',
+      '_Vouches & works reset monthly. Profile/leaderboards are restricted to vouch/staff roles._',
     ].join('\n');
 
     const hierarchy = [
@@ -23,10 +24,10 @@ export default {
     ].join('\n');
 
     const setup = [
-      '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>`',
-      '`k!setmmvouchrole <@role>` · `k!setpilotvouchrole <@role>`',
-      '`k!setmmquota <n>` · `k!setpilotquota <n>` (0 = off)',
-      '`k!removemmquota` · `k!removepilotquota`',
+      '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>`',
+      '`k!setmmvouchrole <@role>` · `k!setpilotvouchrole <@role>` · `k!setstaffrole <@role>`',
+      '`k!setmmquota <n>` · `k!setpilotquota <n>` · `k!setstaffquota <n>` (0 = off)',
+      '`k!removemmquota` · `k!removepilotquota` · `k!removestaffquota`',
       '`k!resetvouches <month|alltime|all> [user/id]`',
       '`k!config` — view current setup',
     ].join('\n');
@@ -43,7 +44,7 @@ export default {
     const embed = new EmbedBuilder()
       .setTitle('Commands')
       .addFields(
-        { name: '🪙 Vouches', value: vouches, inline: false },
+        { name: '🪙 Vouches & Works', value: vouches, inline: false },
         { name: '👑 Staff Hierarchy (Manage Server)', value: hierarchy, inline: false },
         { name: '⚙️ Setup (requires command-control role)', value: setup, inline: false },
         { name: '🛡️ Moderation (proof image required)', value: moderation, inline: false },

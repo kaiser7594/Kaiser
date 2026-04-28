@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { reply } from '../utils/reply.js';
 import { listLeaderboard } from '../vouchService.js';
+import { canViewVouchProfile } from '../permissions.js';
 
 export default {
   name: 'middlemanleaderboard',
@@ -16,7 +17,10 @@ export default {
       )
     ),
   async run(ctx) {
-    const { interaction, guild, args } = ctx;
+    const { interaction, member, guild, args } = ctx;
+    if (!(await canViewVouchProfile(member))) {
+      return reply(ctx, '❌ Only middleman / pilot / staff role members can view leaderboards.');
+    }
     const scope = (interaction ? interaction.options.getString('scope') : args[0]) || 'month';
     const norm = ['month', 'alltime'].includes(scope) ? scope : 'month';
     const rows = await listLeaderboard(guild.id, 'mm', norm, 25);

@@ -30,11 +30,27 @@ export async function isLowTeam(member) {
   return (cfg.lowTeamRoleIds || []).some((r) => member.roles.cache.has(r));
 }
 
-// Either staff tier (used to gate ban/warn/unban entry)
+// Either moderation staff tier (used to gate ban/warn/unban entry)
 export async function isAnyStaff(member) {
   if (await isHighTeam(member)) return true;
   if (await isLowTeam(member)) return true;
   return false;
+}
+
+// "Vouchable" role check — only people with one of the vouch/staff roles
+// (or admins/mods) may use profile + leaderboards.
+export async function canViewVouchProfile(member) {
+  if (!member) return false;
+  if (isAdminOrOwner(member) || hasManageGuild(member)) return true;
+  const cfg = await getConfig(member.guild.id);
+  const allowed = [
+    ...(cfg.mmVouchRoleIds || []),
+    ...(cfg.pilotVouchRoleIds || []),
+    ...(cfg.staffRoleIds || []),
+    ...(cfg.highTeamRoleIds || []),
+    ...(cfg.cmdControlRoleIds || []),
+  ];
+  return allowed.some((r) => member.roles.cache.has(r));
 }
 
 export function hasModPerm(member) {

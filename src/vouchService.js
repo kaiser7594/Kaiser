@@ -5,14 +5,17 @@ const userKey = (gid, uid) => `k:guild:${gid}:vouch:${uid}`;
 const histKey = (gid, uid) => `k:guild:${gid}:vouchhist:${uid}`;
 const monthTag = (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 
+const TYPES = ['mm', 'pilot', 'staff'];
+
 const blank = () => ({
   mm: { month: 0, alltime: 0, monthTag: monthTag(), lastAt: null },
   pilot: { month: 0, alltime: 0, monthTag: monthTag(), lastAt: null },
+  staff: { month: 0, alltime: 0, monthTag: monthTag(), lastAt: null },
 });
 
 function rolloverIfNeeded(obj) {
   const tag = monthTag();
-  for (const k of ['mm', 'pilot']) {
+  for (const k of TYPES) {
     if (!obj[k]) obj[k] = { month: 0, alltime: 0, monthTag: tag, lastAt: null };
     if (obj[k].monthTag !== tag) {
       obj[k].month = 0;
@@ -78,18 +81,22 @@ export async function listLeaderboard(guildId, type, scope = 'month', limit = 25
 }
 
 export async function resetVouches(guildId, scope, userId = null) {
+  const reset = (obj) => {
+    for (const t of TYPES) {
+      if (scope === 'month' || scope === 'all') obj[t].month = 0;
+      if (scope === 'alltime' || scope === 'all') obj[t].alltime = 0;
+    }
+  };
   if (userId) {
     const obj = await getProfile(guildId, userId);
-    if (scope === 'month' || scope === 'all') { obj.mm.month = 0; obj.pilot.month = 0; }
-    if (scope === 'alltime' || scope === 'all') { obj.mm.alltime = 0; obj.pilot.alltime = 0; }
+    reset(obj);
     await storage.set(userKey(guildId, userId), obj);
     return 1;
   }
   const keys = await storage.list(`k:guild:${guildId}:vouch:`);
   for (const k of keys) {
     const obj = rolloverIfNeeded(await storage.get(k, blank()));
-    if (scope === 'month' || scope === 'all') { obj.mm.month = 0; obj.pilot.month = 0; }
-    if (scope === 'alltime' || scope === 'all') { obj.mm.alltime = 0; obj.pilot.alltime = 0; }
+    reset(obj);
     await storage.set(k, obj);
   }
   return keys.length;
