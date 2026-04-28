@@ -43,8 +43,8 @@ export default {
       return reply(ctx, `⚠️ This ticket is already claimed by <@${existing.userId}>.`);
     }
 
-    const displayName = (member.displayName || member.user.username).replace(/[^a-zA-Z0-9-_]/g, '').toLowerCase().slice(0, 50) || 'staff';
-    const newName = `support-${displayName}`.slice(0, 100);
+    const displayName = (member.displayName || member.user.username).slice(0, 60) || 'staff';
+    const newName = `Claimed by ${displayName}`.slice(0, 100);
     const originalName = channel.name;
 
     try {

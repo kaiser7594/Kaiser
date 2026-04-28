@@ -35,9 +35,9 @@ export default {
       return reply(ctx, `❌ Only <@${rec.userId}> or a setup admin can unclaim this ticket.`);
     }
 
-    if (rec.originalName && rec.originalName !== channel.name) {
+    if (channel.name !== 'open') {
       try {
-        await channel.setName(rec.originalName, `Unclaimed by ${member.user.tag}`);
+        await channel.setName('open', `Unclaimed by ${member.user.tag}`);
       } catch (e) {
         logger.error('unclaim setName failed', e);
       }
