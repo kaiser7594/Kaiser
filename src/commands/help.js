@@ -33,7 +33,8 @@ export default {
 
     const tracking = [
       '🤝 **MM / ✈️ Pilot channels** — pinging a vouch-role member = +1 vouch',
-      '🛡️ **Staff channel** — every staff message = +1 message; messages with a link = +1 work',
+      '💬 **Anywhere** — every message a staff-role member sends = +1 message count',
+      '🛡️ **Staff channel** — staff message with a link = +1 work',
       '🎫 **Ticket channel** — staff posting a transcript link = +1 ticket',
       '_Edits / deletes auto-undo work + ticket counts. Message counts are not undone._',
     ].join('\n');

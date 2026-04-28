@@ -13,37 +13,41 @@ const msgKey = (gid, mid) => `k:guild:${gid}:vouchmsg:${mid}`;
 async function computeForMessage(message, cfg) {
   if (message.author?.bot) return { tracked: [], counters: [] };
 
-  // ---- Staff channel ----
+  const tracked = [];
+  const counters = [];
+
+  // Staff message counter — fires in ANY channel as long as author has a staff role.
+  const staffRoleIds = cfg.staffRoleIds || [];
+  let authorMember = null;
+  let authorIsStaff = false;
+  if (staffRoleIds.length) {
+    authorMember = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
+    authorIsStaff = !!authorMember && staffRoleIds.some((r) => authorMember.roles.cache.has(r));
+    if (authorIsStaff) counters.push({ type: 'staffmsg', userId: message.author.id });
+  }
+
+  // Channel-specific tracked credits
   if (cfg.staffChannelId && message.channel.id === cfg.staffChannelId) {
-    const roleIds = cfg.staffRoleIds || [];
-    if (!roleIds.length) return { tracked: [], counters: [] };
-    const member = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
-    if (!member || !roleIds.some((r) => member.roles.cache.has(r))) return { tracked: [], counters: [] };
-    const tracked = [];
-    if (LINK_RE.test(message.content || '')) tracked.push({ type: 'staff', userId: message.author.id });
-    return { tracked, counters: [{ type: 'staffmsg', userId: message.author.id }] };
+    if (authorIsStaff && LINK_RE.test(message.content || '')) {
+      tracked.push({ type: 'staff', userId: message.author.id });
+    }
+    return { tracked, counters };
   }
 
-  // ---- Ticket channel ----
   if (cfg.ticketChannelId && message.channel.id === cfg.ticketChannelId) {
-    const roleIds = cfg.staffRoleIds || [];
-    if (!roleIds.length) return { tracked: [], counters: [] };
-    const member = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
-    if (!member || !roleIds.some((r) => member.roles.cache.has(r))) return { tracked: [], counters: [] };
-    const tracked = [];
-    if (LINK_RE.test(message.content || '')) tracked.push({ type: 'ticket', userId: message.author.id });
-    return { tracked, counters: [] };
+    if (authorIsStaff && LINK_RE.test(message.content || '')) {
+      tracked.push({ type: 'ticket', userId: message.author.id });
+    }
+    return { tracked, counters };
   }
 
-  // ---- MM / Pilot vouch channels ----
   let type = null;
   if (message.channel.id === cfg.mmChannelId) type = 'mm';
   else if (message.channel.id === cfg.pilotChannelId) type = 'pilot';
-  if (!type) return { tracked: [], counters: [] };
+  if (!type) return { tracked, counters };
   const roleIds = type === 'mm' ? cfg.mmVouchRoleIds : cfg.pilotVouchRoleIds;
-  if (!roleIds || !roleIds.length) return { tracked: [], counters: [] };
+  if (!roleIds || !roleIds.length) return { tracked, counters };
 
-  const tracked = [];
   const seen = new Set();
   let m;
   MENTION_RE.lastIndex = 0;
@@ -59,7 +63,7 @@ async function computeForMessage(message, cfg) {
     if (!roleIds.some((r) => mem.roles.cache.has(r))) continue;
     tracked.push({ type, userId: uid });
   }
-  return { tracked, counters: [] };
+  return { tracked, counters };
 }
 
 const credKey = (c) => `${c.type}:${c.userId}`;
@@ -104,13 +108,11 @@ export async function handleVouchMessageUpdate(client, oldMessage, newMessage) {
   const prevMap = new Map(prevTracked.map((c) => [credKey(c), c]));
   const currMap = new Map(curr.map((c) => [credKey(c), c]));
 
-  // Remove credits no longer present
   for (const [k, c] of prevMap) {
     if (!currMap.has(k)) {
       try { await removeVouch(message.guild.id, c.userId, c.type, message.id); } catch {}
     }
   }
-  // Add new credits
   for (const [k, c] of currMap) {
     if (!prevMap.has(k)) {
       try {
