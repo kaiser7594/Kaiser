@@ -2,32 +2,54 @@ import { storage } from './storage.js';
 
 const userKey = (gid, uid) => `k:guild:${gid}:vouch:${uid}`;
 const histKey = (gid, uid) => `k:guild:${gid}:vouchhist:${uid}`;
-const monthTag = (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+const archiveKey = (gid, uid, tag) => `k:guild:${gid}:archive:${uid}:${tag}`;
+
+export const monthTag = (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+export function prevMonthTag(d = new Date()) {
+  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  x.setUTCMonth(x.getUTCMonth() - 1);
+  return monthTag(x);
+}
+export function monthName(tag) {
+  const [y, m] = tag.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
 
 // Tracked types (have history + delete/edit undo) and counter types (just monthly tallies)
-const TYPES = ['mm', 'pilot', 'staff', 'ticket', 'staffmsg'];
+export const TYPES = ['mm', 'pilot', 'staff', 'ticket', 'staffmsg'];
 
 const blankSlot = () => ({ month: 0, alltime: 0, monthTag: monthTag(), lastAt: null });
 const blank = () => Object.fromEntries(TYPES.map((t) => [t, blankSlot()]));
 
-function rolloverIfNeeded(obj) {
+// In-memory rollover (used by leaderboards). If guildId+userId provided, also archive previous month.
+async function rolloverIfNeeded(obj, guildId = null, userId = null) {
   const tag = monthTag();
+  const toArchive = {}; // tag -> { type: value }
   for (const k of TYPES) {
     if (!obj[k]) obj[k] = blankSlot();
     if (obj[k].monthTag !== tag) {
+      if (obj[k].month > 0 && guildId && userId) {
+        const t = obj[k].monthTag;
+        toArchive[t] = toArchive[t] || {};
+        toArchive[t][k] = obj[k].month;
+      }
       obj[k].month = 0;
       obj[k].monthTag = tag;
     }
+  }
+  for (const [t, vals] of Object.entries(toArchive)) {
+    const k = archiveKey(guildId, userId, t);
+    const existing = (await storage.get(k, {})) || {};
+    await storage.set(k, { ...existing, ...vals });
   }
   return obj;
 }
 
 export async function getProfile(guildId, userId) {
   const raw = await storage.get(userKey(guildId, userId), null);
-  return rolloverIfNeeded(raw || blank());
+  return rolloverIfNeeded(raw || blank(), guildId, userId);
 }
 
-// Tracked credit: bumps counters AND writes a history entry (so it can be undone on delete/edit).
 export async function addVouch(guildId, userId, type, meta = {}) {
   const obj = await getProfile(guildId, userId);
   obj[type].month += 1;
@@ -62,7 +84,6 @@ export async function removeVouch(guildId, userId, type, sourceMessageId = null)
   return obj;
 }
 
-// Counter increment: bumps month/alltime only (no history, no undo). Used for staff message counts.
 export async function incrementCounter(guildId, userId, type) {
   const obj = await getProfile(guildId, userId);
   obj[type].month += 1;
@@ -82,7 +103,7 @@ export async function listLeaderboard(guildId, type, scope = 'month', limit = 25
   const keys = await storage.list(`k:guild:${guildId}:vouch:`);
   const rows = [];
   for (const k of keys) {
-    const data = rolloverIfNeeded(await storage.get(k, blank()));
+    const data = await rolloverIfNeeded((await storage.get(k, blank())) || blank());
     const userId = k.split(':').pop();
     rows.push({ userId, count: data[type][scope] || 0 });
   }
@@ -104,9 +125,45 @@ export async function resetVouches(guildId, scope, userId = null) {
   }
   const keys = await storage.list(`k:guild:${guildId}:vouch:`);
   for (const k of keys) {
-    const obj = rolloverIfNeeded(await storage.get(k, blank()));
+    const obj = await rolloverIfNeeded((await storage.get(k, blank())) || blank());
     reset(obj);
     await storage.set(k, obj);
   }
   return keys.length;
+}
+
+// Return per-user totals for a given month tag, combining the live profile (when monthTag matches)
+// and any archived snapshots already written.
+export async function snapshotMonth(guildId, tag) {
+  const out = {}; // userId -> { mm, pilot, staff, ticket, staffmsg }
+  const aKeys = await storage.list(`k:guild:${guildId}:archive:`);
+  for (const k of aKeys) {
+    const parts = k.split(':');
+    const t = parts.pop();
+    const userId = parts.pop();
+    if (t !== tag) continue;
+    const data = (await storage.get(k, {})) || {};
+    out[userId] = out[userId] || {};
+    for (const type of TYPES) if (data[type]) out[userId][type] = (out[userId][type] || 0) + data[type];
+  }
+  const vKeys = await storage.list(`k:guild:${guildId}:vouch:`);
+  for (const k of vKeys) {
+    const userId = k.split(':').pop();
+    const raw = await storage.get(k, null);
+    if (!raw) continue;
+    for (const type of TYPES) {
+      const slot = raw[type];
+      if (slot && slot.monthTag === tag && slot.month > 0) {
+        out[userId] = out[userId] || {};
+        if (!(type in out[userId])) out[userId][type] = slot.month;
+      }
+    }
+  }
+  return out;
+}
+
+// Live current-month standings (used by quotastatus command)
+export async function currentStandings(guildId) {
+  const tag = monthTag();
+  return snapshotMonth(guildId, tag);
 }

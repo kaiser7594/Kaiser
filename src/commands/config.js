@@ -20,7 +20,7 @@ export default {
         { name: 'Staff Channel', value: fmtChan(c.staffChannelId), inline: true },
         { name: 'Ticket Log Channel', value: fmtChan(c.ticketChannelId), inline: true },
         { name: 'Trainee Approval Channel', value: fmtChan(c.traineeChannelId), inline: true },
-        { name: '\u200b', value: '\u200b', inline: true },
+        { name: 'Staff Quota Report Channel', value: fmtChan(c.staffQuotaChannelId), inline: true },
         { name: 'MM Vouch Roles', value: fmtRoles(c.mmVouchRoleIds), inline: true },
         { name: 'Pilot Vouch Roles', value: fmtRoles(c.pilotVouchRoleIds), inline: true },
         { name: 'Staff Roles', value: fmtRoles(c.staffRoleIds), inline: true },

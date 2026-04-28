@@ -10,6 +10,7 @@ export default {
     const vouches = [
       '`k!p [user/id]` — show vouch / staff profile',
       '`k!mmlb` · `k!pilotlb` · `k!stafflb` — leaderboards',
+      '`k!quotastatus` (`k!qs`) — live who-hit-quota board for this month',
       '`k!vouches [user/id]` — vouch history (mm + pilot)',
       '`k!works [user/id]` — staff work + ticket history',
       '_Counts reset monthly. Profile/leaderboards limited to vouch/staff roles._',
@@ -23,7 +24,7 @@ export default {
     ].join('\n');
 
     const setup = [
-      '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>` · `k!setticketchannel <#ch>`',
+      '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>` · `k!setticketchannel <#ch>` · `k!setstaffquotachannel <#ch>`',
       '`k!setmmvouchrole <@role>` · `k!setpilotvouchrole <@role>` · `k!setstaffrole <@role>`',
       '`k!setmmquota <n>` · `k!setpilotquota <n>` · `k!setstaffquota <n>` (0 = off)',
       '`k!removemmquota` · `k!removepilotquota` · `k!removestaffquota`',

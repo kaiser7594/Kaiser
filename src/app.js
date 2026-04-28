@@ -7,6 +7,7 @@ import { storage } from './storage.js';
 import { loadCommands, registerSlashCommands } from './commandLoader.js';
 import { handleMessage, handleInteraction } from './dispatcher.js';
 import { trackVouchPings, handleVouchMessageDelete, handleVouchMessageUpdate } from './vouchTracker.js';
+import { startMonthlyScheduler } from './monthlyJob.js';
 
 async function main() {
   if (!process.env.DISCORD_TOKEN || !process.env.CLIENT_ID) {
@@ -32,6 +33,7 @@ async function main() {
   client.once('ready', async () => {
     logger.info(`✅ Logged in as ${client.user.tag} | ${client.commands.size} commands loaded.`);
     await registerSlashCommands(client);
+    startMonthlyScheduler(client);
   });
 
   client.on('messageCreate', async (m) => {
