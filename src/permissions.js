@@ -37,18 +37,15 @@ export async function isAnyStaff(member) {
   return false;
 }
 
-// "Vouchable" role check — only people with one of the vouch/staff roles
-// (or admins/mods) may use profile + leaderboards.
+// Strict role gate — ONLY people with mmVouch / pilotVouch / staff role may use
+// profile + leaderboards. Admins / manage-server are not auto-allowed.
 export async function canViewVouchProfile(member) {
   if (!member) return false;
-  if (isAdminOrOwner(member) || hasManageGuild(member)) return true;
   const cfg = await getConfig(member.guild.id);
   const allowed = [
     ...(cfg.mmVouchRoleIds || []),
     ...(cfg.pilotVouchRoleIds || []),
     ...(cfg.staffRoleIds || []),
-    ...(cfg.highTeamRoleIds || []),
-    ...(cfg.cmdControlRoleIds || []),
   ];
   return allowed.some((r) => member.roles.cache.has(r));
 }

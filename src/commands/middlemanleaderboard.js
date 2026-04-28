@@ -19,7 +19,7 @@ export default {
   async run(ctx) {
     const { interaction, member, guild, args } = ctx;
     if (!(await canViewVouchProfile(member))) {
-      return reply(ctx, '❌ Only middleman / pilot / staff role members can view leaderboards.');
+      return reply(ctx, "❌ You don't have the role to use this.");
     }
     const scope = (interaction ? interaction.options.getString('scope') : args[0]) || 'month';
     const norm = ['month', 'alltime'].includes(scope) ? scope : 'month';

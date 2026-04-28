@@ -15,7 +15,7 @@ export default {
   async run(ctx) {
     const { interaction, member, guild, args, user } = ctx;
     if (!(await canViewVouchProfile(member))) {
-      return reply(ctx, '❌ Only middleman / pilot / staff role members can view this.');
+      return reply(ctx, "❌ You don't have the role to use this.");
     }
     let targetId;
     if (interaction) targetId = extractUserId(interaction.options.getString('user')) || user.id;

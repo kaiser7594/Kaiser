@@ -12,7 +12,7 @@ export default {
   async run(ctx) {
     const { member, guild } = ctx;
     if (!(await canViewVouchProfile(member))) {
-      return reply(ctx, '❌ Only middleman / pilot / staff role members can view this.');
+      return reply(ctx, "❌ You don't have the role to use this.");
     }
     const cfg = await getConfig(guild.id);
     const stats = await currentStandings(guild.id);
