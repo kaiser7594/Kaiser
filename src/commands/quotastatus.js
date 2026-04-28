@@ -25,19 +25,33 @@ export default {
       rows.push({ userId, works, tickets, messages });
     }
     rows.sort((a, b) => b.works - a.works || b.tickets - a.tickets || b.messages - a.messages);
-    const quota = cfg.staffQuota || 0;
+    const wq = cfg.staffQuota || 0;
+    const tq = cfg.ticketQuota || 0;
+    const mq = cfg.messageQuota || 0;
+    const anyQuota = wq > 0 || tq > 0 || mq > 0;
+    const passes = (r) =>
+      (wq === 0 || r.works >= wq) &&
+      (tq === 0 || r.tickets >= tq) &&
+      (mq === 0 || r.messages >= mq);
+    const fmtMetric = (val, quota, emoji) => {
+      if (quota === 0) return `${emoji} ${val}`;
+      return `${emoji} ${val}/${quota} ${val >= quota ? '✅' : '❌'}`;
+    };
     const lines = rows.map((r) => {
-      const mark = quota > 0 ? (r.works >= quota ? '✅' : '❌') : '•';
-      const workStr = quota > 0 ? `${r.works}/${quota}` : `${r.works}`;
-      return `${mark} <@${r.userId}> — 🔗 ${workStr} · 🎫 ${r.tickets} · 💬 ${r.messages}`;
+      const mark = anyQuota ? (passes(r) ? '✅' : '❌') : '•';
+      return `${mark} <@${r.userId}> — ${fmtMetric(r.works, wq, '🔗')} · ${fmtMetric(r.tickets, tq, '🎫')} · ${fmtMetric(r.messages, mq, '💬')}`;
     });
     const embed = new EmbedBuilder()
       .setTitle(`📊 Live Staff Standings — ${monthName(monthTag())}`)
       .setDescription(rows.length ? lines.join('\n').slice(0, 4000) : '_No staff activity yet this month._')
       .setColor(0x9b59b6);
-    if (quota > 0 && rows.length) {
-      const hit = rows.filter((r) => r.works >= quota).length;
-      embed.setFooter({ text: `${hit}/${rows.length} staff have hit the ${quota}-work quota so far.` });
+    if (anyQuota && rows.length) {
+      const hit = rows.filter(passes).length;
+      const parts = [];
+      if (wq) parts.push(`works ${wq}`);
+      if (tq) parts.push(`tickets ${tq}`);
+      if (mq) parts.push(`messages ${mq}`);
+      embed.setFooter({ text: `${hit}/${rows.length} staff hitting all quotas (${parts.join(' · ')}).` });
     }
     return reply(ctx, { embeds: [embed], allowedMentions: { parse: [] } });
   },

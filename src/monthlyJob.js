@@ -19,24 +19,41 @@ async function summarizeForGuild(client, guild, tag) {
   }
   rows.sort((a, b) => b.works - a.works || b.tickets - a.tickets || b.messages - a.messages);
 
-  const quota = cfg.staffQuota || 0;
+  const wq = cfg.staffQuota || 0;
+  const tq = cfg.ticketQuota || 0;
+  const mq = cfg.messageQuota || 0;
+  const anyQuota = wq > 0 || tq > 0 || mq > 0;
   const period = monthName(tag);
+
+  const passes = (r) =>
+    (wq === 0 || r.works >= wq) &&
+    (tq === 0 || r.tickets >= tq) &&
+    (mq === 0 || r.messages >= mq);
+
+  const fmtMetric = (val, quota, emoji) => {
+    if (quota === 0) return `${emoji} ${val}`;
+    const ok = val >= quota ? '✅' : '❌';
+    return `${emoji} ${val}/${quota} ${ok}`;
+  };
 
   if (cfg.staffQuotaChannelId) {
     const ch = await guild.channels.fetch(cfg.staffQuotaChannelId).catch(() => null);
     if (ch && ch.isTextBased?.()) {
       const lines = rows.map((r) => {
-        const mark = quota > 0 ? (r.works >= quota ? '✅' : '❌') : '•';
-        const workStr = quota > 0 ? `${r.works}/${quota}` : `${r.works}`;
-        return `${mark} <@${r.userId}> — 🔗 ${workStr} · 🎫 ${r.tickets} · 💬 ${r.messages}`;
+        const mark = anyQuota ? (passes(r) ? '✅' : '❌') : '•';
+        return `${mark} <@${r.userId}> — ${fmtMetric(r.works, wq, '🔗')} · ${fmtMetric(r.tickets, tq, '🎫')} · ${fmtMetric(r.messages, mq, '💬')}`;
       });
       const embed = new EmbedBuilder()
         .setTitle(`📊 Monthly Staff Report — ${period}`)
         .setDescription(rows.length ? lines.join('\n').slice(0, 4000) : '_No staff activity recorded this month._')
         .setColor(0x9b59b6);
-      if (quota > 0 && rows.length) {
-        const hit = rows.filter((r) => r.works >= quota).length;
-        embed.setFooter({ text: `${hit}/${rows.length} staff hit the ${quota}-work quota.` });
+      if (anyQuota && rows.length) {
+        const hit = rows.filter(passes).length;
+        const parts = [];
+        if (wq) parts.push(`works ${wq}`);
+        if (tq) parts.push(`tickets ${tq}`);
+        if (mq) parts.push(`messages ${mq}`);
+        embed.setFooter({ text: `${hit}/${rows.length} staff hit all quotas (${parts.join(' · ')}).` });
       }
       try { await ch.send({ embeds: [embed], allowedMentions: { parse: [] } }); }
       catch (e) { logger.error('quota channel post failed', e); }
@@ -46,11 +63,16 @@ async function summarizeForGuild(client, guild, tag) {
   for (const r of rows) {
     try {
       const u = await client.users.fetch(r.userId);
-      const workStr = quota > 0 ? `${r.works}/${quota} ${r.works >= quota ? '✅' : '❌'}` : String(r.works);
+      const overall = anyQuota ? (passes(r) ? '✅ All quotas hit' : '❌ Quota not met') : '';
       const embed = new EmbedBuilder()
         .setTitle(`Your ${period} report — ${guild.name}`)
-        .setDescription(`🔗 Works: **${workStr}**\n🎫 Tickets: **${r.tickets}**\n💬 Messages: **${r.messages}**`)
-        .setColor(0x5865f2);
+        .setDescription([
+          `🔗 Works: **${fmtMetric(r.works, wq, '').trim()}**`,
+          `🎫 Tickets: **${fmtMetric(r.tickets, tq, '').trim()}**`,
+          `💬 Messages: **${fmtMetric(r.messages, mq, '').trim()}**`,
+          overall ? `\n${overall}` : '',
+        ].join('\n'))
+        .setColor(passes(r) || !anyQuota ? 0x2ecc71 : 0xe74c3c);
       await u.send({ embeds: [embed] }).catch(() => {});
     } catch {}
   }
