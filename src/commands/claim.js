@@ -4,13 +4,9 @@ import { getConfig } from '../guildConfig.js';
 import { addVouch } from '../vouchService.js';
 import { storage } from '../storage.js';
 import { logger } from '../logger.js';
+import { isEligibleTicketChannel } from '../utils/ticketChannel.js';
 
 const claimKey = (gid, tid) => `k:guild:${gid}:ticketclaim:${tid}`;
-const THREAD_TYPES = [
-  ChannelType.PublicThread,
-  ChannelType.PrivateThread,
-  ChannelType.AnnouncementThread,
-];
 
 export default {
   name: 'claim',
@@ -22,14 +18,11 @@ export default {
     const channel = message ? message.channel : interaction.channel;
 
     const cfg = await getConfig(guild.id);
-    if (!cfg.ticketChannelId) {
-      return reply(ctx, '❌ No ticket channel is configured. Ask an admin to run `k!setticketchannel`.');
+    if (!cfg.ticketChannelId && !cfg.ticketCategoryId) {
+      return reply(ctx, '❌ No ticket location is configured. Ask an admin to run `k!setticketchannel` or `k!setticketcategory`.');
     }
-    if (!channel || !THREAD_TYPES.includes(channel.type)) {
-      return reply(ctx, '❌ This command can only be used inside a ticket thread.');
-    }
-    if (channel.parentId !== cfg.ticketChannelId) {
-      return reply(ctx, '❌ This thread is not in the configured ticket channel.');
+    if (!isEligibleTicketChannel(channel, cfg)) {
+      return reply(ctx, '❌ This channel is not a configured ticket (use a thread under the ticket channel, or a channel under the ticket category).');
     }
 
     const staffRoleIds = cfg.staffRoleIds || [];

@@ -1,17 +1,12 @@
-import { SlashCommandBuilder, ChannelType } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import { reply } from '../utils/reply.js';
-import { getConfig } from '../guildConfig.js';
 import { removeVouch } from '../vouchService.js';
 import { hasCmdControl } from '../permissions.js';
 import { storage } from '../storage.js';
 import { logger } from '../logger.js';
+import { isAnyTicketChannel } from '../utils/ticketChannel.js';
 
 const claimKey = (gid, tid) => `k:guild:${gid}:ticketclaim:${tid}`;
-const THREAD_TYPES = [
-  ChannelType.PublicThread,
-  ChannelType.PrivateThread,
-  ChannelType.AnnouncementThread,
-];
 
 export default {
   name: 'unclaim',
@@ -22,8 +17,8 @@ export default {
     const { message, interaction, member, guild } = ctx;
     const channel = message ? message.channel : interaction.channel;
 
-    if (!channel || !THREAD_TYPES.includes(channel.type)) {
-      return reply(ctx, '❌ This command can only be used inside a ticket thread.');
+    if (!isAnyTicketChannel(channel)) {
+      return reply(ctx, '❌ This command can only be used inside a ticket thread or ticket channel.');
     }
 
     const rec = await storage.get(claimKey(guild.id, channel.id), null);

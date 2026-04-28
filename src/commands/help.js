@@ -25,6 +25,7 @@ export default {
 
     const setup = [
       '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>` · `k!setticketchannel <#ch>` · `k!setstaffquotachannel <#ch>`',
+      '`k!setticketcategory <id>` · `k!removeticketcategory` — for channel-style tickets',
       '`k!setmmvouchrole <@role>` · `k!setpilotvouchrole <@role>` · `k!setstaffrole <@role>`',
       '`k!claim` / `k!unclaim` — claim a ticket thread (parent = ticket channel)',
       '`k!ticketinfo` (`k!ti`) — show who claimed this thread, or list a user\'s open tickets',

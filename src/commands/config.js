@@ -21,6 +21,7 @@ export default {
         { name: 'Ticket Log Channel', value: fmtChan(c.ticketChannelId), inline: true },
         { name: 'Trainee Approval Channel', value: fmtChan(c.traineeChannelId), inline: true },
         { name: 'Staff Quota Report Channel', value: fmtChan(c.staffQuotaChannelId), inline: true },
+        { name: 'Ticket Category', value: c.ticketCategoryId ? `\`${c.ticketCategoryId}\`` : '_unset_', inline: true },
         { name: 'MM Vouch Roles', value: fmtRoles(c.mmVouchRoleIds), inline: true },
         { name: 'Pilot Vouch Roles', value: fmtRoles(c.pilotVouchRoleIds), inline: true },
         { name: 'Staff Roles', value: fmtRoles(c.staffRoleIds), inline: true },

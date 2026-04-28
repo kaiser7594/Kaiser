@@ -1,16 +1,12 @@
-import { SlashCommandBuilder, ChannelType, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { reply } from '../utils/reply.js';
 import { getConfig } from '../guildConfig.js';
 import { storage } from '../storage.js';
 import { extractUserId } from '../utils/parse.js';
+import { isAnyTicketChannel } from '../utils/ticketChannel.js';
 
 const claimKey = (gid, tid) => `k:guild:${gid}:ticketclaim:${tid}`;
 const claimPrefix = (gid) => `k:guild:${gid}:ticketclaim:`;
-const THREAD_TYPES = [
-  ChannelType.PublicThread,
-  ChannelType.PrivateThread,
-  ChannelType.AnnouncementThread,
-];
 
 const fmtTs = (iso) => {
   const t = Math.floor(new Date(iso).getTime() / 1000);
@@ -37,8 +33,8 @@ export default {
       if (uid) target = await ctx.client.users.fetch(uid).catch(() => null);
     }
 
-    // Mode 1: in a thread, no user given -> show this thread's claim
-    if (!target && channel && THREAD_TYPES.includes(channel.type)) {
+    // Mode 1: in a ticket channel/thread, no user given -> show this ticket's claim
+    if (!target && isAnyTicketChannel(channel)) {
       const rec = await storage.get(claimKey(guild.id, channel.id), null);
       if (!rec) return reply(ctx, '⚠️ This ticket is not currently claimed.');
       const embed = new EmbedBuilder()

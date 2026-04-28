@@ -17,6 +17,7 @@ export const DEFAULTS = {
   staffChannelId: null,
   staffQuota: 0,
   ticketChannelId: null,
+  ticketCategoryId: null,
   staffQuotaChannelId: null,
   ticketQuota: 0,
   messageQuota: 0,
