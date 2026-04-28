@@ -30,30 +30,18 @@ export default {
     const profile = await getProfile(guild.id, targetId);
     const cfg = await getConfig(guild.id);
 
-    const hasMM = tMember && (cfg.mmVouchRoleIds || []).some((r) => tMember.roles.cache.has(r));
-    const hasPilot = tMember && (cfg.pilotVouchRoleIds || []).some((r) => tMember.roles.cache.has(r));
-    const hasStaff = tMember && (cfg.staffRoleIds || []).some((r) => tMember.roles.cache.has(r));
-    const hasStaffData = profile.staff.alltime > 0 || profile.ticket.alltime > 0 || profile.staffmsg.alltime > 0;
-
     const sections = [];
-    if (hasMM || profile.mm.alltime > 0 || (!hasPilot && !hasStaff && !hasStaffData)) {
-      sections.push(`🤝 **Middleman**\nThis month: **${profile.mm.month}** • All time: **${profile.mm.alltime}**` +
-        (cfg.mmQuota > 0 ? ` • Quota: **${profile.mm.month}/${cfg.mmQuota}**` : ''));
-    }
-    if (hasPilot || profile.pilot.alltime > 0) {
-      sections.push(`✈️ **Pilot**\nThis month: **${profile.pilot.month}** • All time: **${profile.pilot.alltime}**` +
-        (cfg.pilotQuota > 0 ? ` • Quota: **${profile.pilot.month}/${cfg.pilotQuota}**` : ''));
-    }
-    if (hasStaff || hasStaffData) {
-      const lines = [
-        `🛡️ **Staff**`,
-        `🔗 Works — month: **${profile.staff.month}** • all time: **${profile.staff.alltime}**` +
-          (cfg.staffQuota > 0 ? ` • Quota: **${profile.staff.month}/${cfg.staffQuota}**` : ''),
-        `🎫 Tickets — month: **${profile.ticket.month}** • all time: **${profile.ticket.alltime}**`,
-        `💬 Messages — month: **${profile.staffmsg.month}** • all time: **${profile.staffmsg.alltime}**`,
-      ];
-      sections.push(lines.join('\n'));
-    }
+    sections.push(`🤝 **Middleman**\nThis month: **${profile.mm.month}** • All time: **${profile.mm.alltime}**` +
+      (cfg.mmQuota > 0 ? ` • Quota: **${profile.mm.month}/${cfg.mmQuota}**` : ''));
+    sections.push(`✈️ **Pilot**\nThis month: **${profile.pilot.month}** • All time: **${profile.pilot.alltime}**` +
+      (cfg.pilotQuota > 0 ? ` • Quota: **${profile.pilot.month}/${cfg.pilotQuota}**` : ''));
+    sections.push([
+      `🛡️ **Staff**`,
+      `🔗 Works — month: **${profile.staff.month}** • all time: **${profile.staff.alltime}**` +
+        (cfg.staffQuota > 0 ? ` • Quota: **${profile.staff.month}/${cfg.staffQuota}**` : ''),
+      `🎫 Tickets — month: **${profile.ticket.month}** • all time: **${profile.ticket.alltime}**`,
+      `💬 Messages — month: **${profile.staffmsg.month}** • all time: **${profile.staffmsg.alltime}**`,
+    ].join('\n'));
 
     const monthName = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const displayName = target ? (target.username || target.tag) : `User ${targetId}`;
