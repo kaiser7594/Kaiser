@@ -34,13 +34,6 @@ async function computeForMessage(message, cfg) {
     return { tracked, counters };
   }
 
-  if (cfg.ticketChannelId && message.channel.id === cfg.ticketChannelId) {
-    if (authorIsStaff && LINK_RE.test(message.content || '')) {
-      tracked.push({ type: 'ticket', userId: message.author.id });
-    }
-    return { tracked, counters };
-  }
-
   let type = null;
   if (message.channel.id === cfg.mmChannelId) type = 'mm';
   else if (message.channel.id === cfg.pilotChannelId) type = 'pilot';

@@ -26,6 +26,7 @@ export default {
     const setup = [
       '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>` · `k!setticketchannel <#ch>` · `k!setstaffquotachannel <#ch>`',
       '`k!setmmvouchrole <@role>` · `k!setpilotvouchrole <@role>` · `k!setstaffrole <@role>`',
+      '`k!claim` / `k!unclaim` — claim a ticket thread (parent = ticket channel)',
       '`k!setmmquota <n>` · `k!setpilotquota <n>` · `k!setstaffquota <n>` · `k!setticketquota <n>` · `k!setmessagequota <n>` (0 = off)',
       '`k!removemmquota` · `k!removepilotquota` · `k!removestaffquota` · `k!removeticketquota` · `k!removemessagequota`',
       '`k!resetvouches <month|alltime|all> [user/id]`',
