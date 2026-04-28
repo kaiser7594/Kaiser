@@ -1,22 +1,19 @@
 import { storage } from './storage.js';
-import { getConfig } from './guildConfig.js';
 
 const userKey = (gid, uid) => `k:guild:${gid}:vouch:${uid}`;
 const histKey = (gid, uid) => `k:guild:${gid}:vouchhist:${uid}`;
 const monthTag = (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 
-const TYPES = ['mm', 'pilot', 'staff'];
+// Tracked types (have history + delete/edit undo) and counter types (just monthly tallies)
+const TYPES = ['mm', 'pilot', 'staff', 'ticket', 'staffmsg'];
 
-const blank = () => ({
-  mm: { month: 0, alltime: 0, monthTag: monthTag(), lastAt: null },
-  pilot: { month: 0, alltime: 0, monthTag: monthTag(), lastAt: null },
-  staff: { month: 0, alltime: 0, monthTag: monthTag(), lastAt: null },
-});
+const blankSlot = () => ({ month: 0, alltime: 0, monthTag: monthTag(), lastAt: null });
+const blank = () => Object.fromEntries(TYPES.map((t) => [t, blankSlot()]));
 
 function rolloverIfNeeded(obj) {
   const tag = monthTag();
   for (const k of TYPES) {
-    if (!obj[k]) obj[k] = { month: 0, alltime: 0, monthTag: tag, lastAt: null };
+    if (!obj[k]) obj[k] = blankSlot();
     if (obj[k].monthTag !== tag) {
       obj[k].month = 0;
       obj[k].monthTag = tag;
@@ -30,6 +27,7 @@ export async function getProfile(guildId, userId) {
   return rolloverIfNeeded(raw || blank());
 }
 
+// Tracked credit: bumps counters AND writes a history entry (so it can be undone on delete/edit).
 export async function addVouch(guildId, userId, type, meta = {}) {
   const obj = await getProfile(guildId, userId);
   obj[type].month += 1;
@@ -64,9 +62,20 @@ export async function removeVouch(guildId, userId, type, sourceMessageId = null)
   return obj;
 }
 
-export async function listVouchHistory(guildId, userId, limit = 25) {
+// Counter increment: bumps month/alltime only (no history, no undo). Used for staff message counts.
+export async function incrementCounter(guildId, userId, type) {
+  const obj = await getProfile(guildId, userId);
+  obj[type].month += 1;
+  obj[type].alltime += 1;
+  obj[type].lastAt = new Date().toISOString();
+  await storage.set(userKey(guildId, userId), obj);
+  return obj;
+}
+
+export async function listVouchHistory(guildId, userId, limit = 25, types = null) {
   const list = (await storage.get(histKey(guildId, userId), [])) || [];
-  return list.slice(-limit).reverse();
+  const filtered = types ? list.filter((e) => types.includes(e.type)) : list;
+  return filtered.slice(-limit).reverse();
 }
 
 export async function listLeaderboard(guildId, type, scope = 'month', limit = 25) {

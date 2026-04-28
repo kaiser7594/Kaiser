@@ -8,28 +8,34 @@ export default {
   slash: new SlashCommandBuilder().setName('help').setDescription('List all commands.'),
   async run(ctx) {
     const vouches = [
-      '`k!p [user/id]` — show vouch / work profile',
-      '`k!mmlb` — middleman leaderboard',
-      '`k!pilotlb` — pilot leaderboard',
-      '`k!stafflb` — staff work leaderboard',
-      '`k!vouches [user/id]` — vouch history',
-      '_Vouches & works reset monthly. Profile/leaderboards are restricted to vouch/staff roles._',
+      '`k!p [user/id]` — show vouch / staff profile',
+      '`k!mmlb` · `k!pilotlb` · `k!stafflb` — leaderboards',
+      '`k!vouches [user/id]` — vouch history (mm + pilot)',
+      '`k!works [user/id]` — staff work + ticket history',
+      '_Counts reset monthly. Profile/leaderboards limited to vouch/staff roles._',
     ].join('\n');
 
     const hierarchy = [
       '`k!setcmdcontrolrole <@role>` — role allowed to use the setup commands below',
       '`k!sethighteamrole <@role>` — high team (can ban/warn directly with proof)',
       '`k!setlowteamrole <@role>` — trainee team (ban/warn requires approval)',
-      '`k!settraineechannel <#ch>` — channel where trainee reports are sent for approval',
+      '`k!settraineechannel <#ch>` — channel where trainee reports go for approval',
     ].join('\n');
 
     const setup = [
-      '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>`',
+      '`k!setmmchannel <#ch>` · `k!setpilotchannel <#ch>` · `k!setstaffchannel <#ch>` · `k!setticketchannel <#ch>`',
       '`k!setmmvouchrole <@role>` · `k!setpilotvouchrole <@role>` · `k!setstaffrole <@role>`',
       '`k!setmmquota <n>` · `k!setpilotquota <n>` · `k!setstaffquota <n>` (0 = off)',
       '`k!removemmquota` · `k!removepilotquota` · `k!removestaffquota`',
       '`k!resetvouches <month|alltime|all> [user/id]`',
       '`k!config` — view current setup',
+    ].join('\n');
+
+    const tracking = [
+      '🤝 **MM / ✈️ Pilot channels** — pinging a vouch-role member = +1 vouch',
+      '🛡️ **Staff channel** — every staff message = +1 message; messages with a link = +1 work',
+      '🎫 **Ticket channel** — staff posting a transcript link = +1 ticket',
+      '_Edits / deletes auto-undo work + ticket counts. Message counts are not undone._',
     ].join('\n');
 
     const moderation = [
@@ -45,6 +51,7 @@ export default {
       .setTitle('Commands')
       .addFields(
         { name: '🪙 Vouches & Works', value: vouches, inline: false },
+        { name: '👀 How tracking works', value: tracking, inline: false },
         { name: '👑 Staff Hierarchy (Manage Server)', value: hierarchy, inline: false },
         { name: '⚙️ Setup (requires command-control role)', value: setup, inline: false },
         { name: '🛡️ Moderation (proof image required)', value: moderation, inline: false },

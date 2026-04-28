@@ -16,6 +16,7 @@ export const DEFAULTS = {
   staffRoleIds: [],
   staffChannelId: null,
   staffQuota: 0,
+  ticketChannelId: null,
 };
 
 export async function getConfig(guildId) {
